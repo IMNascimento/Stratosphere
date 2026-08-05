@@ -30,7 +30,7 @@ tradicional por dois motivos que se somam:
 | quem sabe o que e "Nike" | o modelo | **o banco** |
 
 O detector deste projeto **nunca** e informado de nome de marca. A entidade
-`Deteccao` nao tem campo `marca`, e essa ausencia e estrutural: e o que impede o
+`Detection` nao tem campo `brand`, e essa ausencia e estrutural: e o que impede o
 acoplamento de voltar por descuido.
 
 ---
@@ -191,7 +191,7 @@ Arquitetura em camadas, com a dependencia sempre apontando para dentro.
 ```
 config/          dataclasses de configuracao, sem logica e sem ambiente
 domain/          entidades, value objects e AS REGRAS DE DECISAO
-  services/roteador_de_fila.py    <- o nucleo. Puro, sem I/O, sem GPU
+  services/queue_router.py        <- o nucleo. Puro, sem I/O, sem GPU
 application/     portas e casos de uso — orquestra, nao decide
 infrastructure/  os adaptadores concretos e o container
 entrypoints/cli/ a linha de comando
@@ -223,14 +223,14 @@ importados de outro contexto:
 
 | parametro | por que nao transfere |
 |---|---|
-| `DetectorConfig.limiar_de_confianca` | esta na escala **daquele** detector. Um valor razoavel para um modelo treinado costuma zerar o recall de um detector de vocabulario aberto, cuja distribuicao de confianca e muito mais comprimida |
-| `RoteamentoConfig.similaridade_minima` | esta na escala **daquele** codificador. Vetores de regioes nao relacionadas raramente ficam proximos de zero — mapear a partir de zero faz parede lisa parecer evidencia |
+| `DetectorConfig.confidence_threshold` | esta na escala **daquele** detector. Um valor razoavel para um modelo treinado costuma zerar o recall de um detector de vocabulario aberto, cuja distribuicao de confianca e muito mais comprimida |
+| `RoutingConfig.min_similarity` | esta na escala **daquele** codificador. Vetores de regioes nao relacionadas raramente ficam proximos de zero — mapear a partir de zero faz parede lisa parecer evidencia |
 
 Recalibre com dado proprio antes de operar. Os defaults sao ponto de partida.
 
 ### Uma armadilha do scorer
 
-Os pesos de `RoteamentoConfig` somam 1. Quando a verificacao geometrica **nao
+Os pesos de `RoutingConfig` somam 1. Quando a verificacao geometrica **nao
 opina** — logo chapado ou pequeno demais para casar pontos — os pesos restantes
 sao **renormalizados**. Sem isso, a regiao seria punida por uma evidencia que
 nunca teve chance de existir, e o teto da pontuacao cairia abaixo do limiar de
@@ -252,7 +252,7 @@ seguranca contra regressao.
 
 O dominio foi escrito puro e sem I/O justamente para que a suite possa ser
 acrescentada depois sem refatoracao. O ponto de partida obvio e
-`tests/unit/test_roteador_de_fila.py`, cobrindo a ordem das regras descrita em
+`tests/unit/test_queue_router.py`, cobrindo a ordem das regras descrita em
 `.claude/doc/CONTRACTS.md` — e o arquivo de maior risco e menor custo de teste.
 
 ---

@@ -14,100 +14,101 @@ escolhe alguma. Com elas, "isto e um logo de quem nao interessa" passa a ser uma
 resposta possivel — e um acerto, nao uma rejeicao.
 
 Typical usage:
-    grupos = GruposDeConfusao(
-        grupos=(("gatorade", "powerade"),),
-        negativas=("powerade",),
+    groups = ConfusionGroups(
+        groups=(("gatorade", "powerade"),),
+        negatives=("powerade",),
+        tie_margin=0.06,
     )
-    if grupos.mesmo_grupo("gatorade", "powerade"):
+    if groups.same_group("gatorade", "powerade"):
         ...
 """
 
 from collections.abc import Iterable, Sequence
 
 
-class GruposDeConfusao:
+class ConfusionGroups:
     """Consulta a politica de marcas confundiveis e fora do portfolio.
 
     A instancia e imutavel apos a construcao: todos os dados vem por parametro e
     nada e lido de ambiente ou de arquivo.
 
     Attributes:
-        margem_de_empate: Diferenca de similaridade abaixo da qual duas marcas do
+        tie_margin: Diferenca de similaridade abaixo da qual duas marcas do
             mesmo grupo sao consideradas empatadas.
     """
 
     def __init__(
         self,
-        grupos: Iterable[Sequence[str]],
-        negativas: Iterable[str],
-        margem_de_empate: float,
+        groups: Iterable[Sequence[str]],
+        negatives: Iterable[str],
+        tie_margin: float,
     ) -> None:
         """Inicializa a politica com os grupos e as marcas negativas.
 
         Args:
-            grupos: Conjuntos de marcas confundiveis entre si. Marcas sao
+            groups: Conjuntos de marcas confundiveis entre si. Marcas sao
                 comparadas em minusculo.
-            negativas: Marcas presentes no banco que nao pertencem ao portfolio.
-            margem_de_empate: Diferenca de similaridade abaixo da qual duas
-                marcas do mesmo grupo empatam. Deve ser nao negativa.
+            negatives: Marcas presentes no banco que nao pertencem ao portfolio.
+            tie_margin: Diferenca de similaridade abaixo da qual duas marcas do
+                mesmo grupo empatam. Deve ser nao negativa.
 
         Raises:
-            ValueError: Se `margem_de_empate` for negativa.
+            ValueError: Se `tie_margin` for negativa.
         """
-        if margem_de_empate < 0:
-            raise ValueError(f"margem_de_empate nao pode ser negativa: {margem_de_empate}")
-        self._grupos: tuple[frozenset[str], ...] = tuple(
-            frozenset(marca.lower() for marca in grupo) for grupo in grupos
+        if tie_margin < 0:
+            raise ValueError(f"tie_margin nao pode ser negativa: {tie_margin}")
+        self._groups: tuple[frozenset[str], ...] = tuple(
+            frozenset(brand.lower() for brand in group) for group in groups
         )
-        self._negativas: frozenset[str] = frozenset(marca.lower() for marca in negativas)
-        self.margem_de_empate = margem_de_empate
+        self._negatives: frozenset[str] = frozenset(brand.lower() for brand in negatives)
+        self.tie_margin = tie_margin
 
-    def mesmo_grupo(self, marca_a: str | None, marca_b: str | None) -> bool:
+    def same_group(self, brand_a: str | None, brand_b: str | None) -> bool:
         """Verifica se duas marcas pertencem ao mesmo grupo de confusao.
 
         Args:
-            marca_a: Primeira marca. Aceita None por conveniencia do chamador.
-            marca_b: Segunda marca. Aceita None por conveniencia do chamador.
+            brand_a: Primeira marca. Aceita None por conveniencia do chamador.
+            brand_b: Segunda marca. Aceita None por conveniencia do chamador.
 
         Returns:
             True apenas se as duas forem preenchidas, diferentes entre si, e
             compartilharem ao menos um grupo declarado.
         """
-        if not marca_a or not marca_b:
+        if not brand_a or not brand_b:
             return False
-        primeira = marca_a.lower()
-        segunda = marca_b.lower()
-        if primeira == segunda:
+        first = brand_a.lower()
+        second = brand_b.lower()
+        if first == second:
             return False
-        return any(primeira in grupo and segunda in grupo for grupo in self._grupos)
+        return any(first in group and second in group for group in self._groups)
 
-    def grupo_de(self, marca: str | None) -> tuple[str, ...]:
+    def group_of(self, brand: str | None) -> tuple[str, ...]:
         """Retorna o grupo de confusao ao qual a marca pertence.
 
         Args:
-            marca: Marca a consultar.
+            brand: Marca a consultar.
 
         Returns:
             Marcas do grupo em ordem alfabetica, ou tupla vazia se a marca nao
             pertence a grupo nenhum.
         """
-        if not marca:
+        if not brand:
             return ()
-        alvo = marca.lower()
-        for grupo in self._grupos:
-            if alvo in grupo:
-                return tuple(sorted(grupo))
+        target = brand.lower()
+        for group in self._groups:
+            if target in group:
+                return tuple(sorted(group))
         return ()
 
-    def e_negativa(self, marca: str | None) -> bool:
+    def is_negative(self, brand: str | None) -> bool:
         """Verifica se a marca esta no banco mas fora do portfolio.
 
         Args:
-            marca: Marca a consultar.
+            brand: Marca a consultar.
 
         Returns:
             True se a marca e concorrente cadastrada e nao cliente.
         """
-        if not marca:
+        if not brand:
             return False
-        return marca.lower() in self._negativas
+        return brand.lower() in self._negatives

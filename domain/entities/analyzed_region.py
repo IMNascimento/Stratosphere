@@ -6,75 +6,75 @@ chega ao roteador completo. As propriedades derivadas existem para que o roteado
 receba os sinais prontos e nao precise reimplementar as mesmas contas.
 
 Typical usage:
-    regiao = RegiaoAnalisada(identificador="img-00", deteccao=deteccao)
-    regiao = regiao.com_candidatos(candidatos)
-    regiao = regiao.com_vereditos(vereditos)
-    decisao = roteador.rotear(regiao)
+    region = AnalyzedRegion(identifier="img-00", detection=detection)
+    region = region.with_candidates(candidates)
+    region = region.with_verdicts(verdicts)
+    decision = router.route(region)
 """
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 
-from domain.entities.deteccao import Deteccao
-from domain.value_objects.candidato import Candidato
-from domain.value_objects.veredito_geometrico import VereditoGeometrico
+from domain.entities.detection import Detection
+from domain.value_objects.candidate import Candidate
+from domain.value_objects.geometric_verdict import GeometricVerdict
 
 
 @dataclass(frozen=True)
-class RegiaoAnalisada:
+class AnalyzedRegion:
     """Uma deteccao acrescida do que as camadas seguintes descobriram.
 
     Attributes:
-        identificador: Chave estavel da regiao, unica dentro de uma execucao.
-        deteccao: O que o detector agnostico produziu.
-        candidatos: Respostas do banco, **ordenadas por similaridade
+        identifier: Chave estavel da regiao, unica dentro de uma execucao.
+        detection: O que o detector agnostico produziu.
+        candidates: Respostas do banco, **ordenadas por similaridade
             decrescente**. A ordem e contrato — as propriedades derivadas
             dependem dela.
-        vereditos: Resultados da verificacao geometrica. Pode ser vazio: nem
+        verdicts: Resultados da verificacao geometrica. Pode ser vazio: nem
             toda regiao tem pontos suficientes, e ausencia de veredito e
             diferente de veredito negativo.
     """
 
-    identificador: str
-    deteccao: Deteccao
-    candidatos: tuple[Candidato, ...] = field(default_factory=tuple)
-    vereditos: tuple[VereditoGeometrico, ...] = field(default_factory=tuple)
+    identifier: str
+    detection: Detection
+    candidates: tuple[Candidate, ...] = field(default_factory=tuple)
+    verdicts: tuple[GeometricVerdict, ...] = field(default_factory=tuple)
 
-    def com_candidatos(self, candidatos: Sequence[Candidato]) -> "RegiaoAnalisada":
+    def with_candidates(self, candidates: Sequence[Candidate]) -> "AnalyzedRegion":
         """Devolve uma copia com os candidatos do banco preenchidos.
 
         Args:
-            candidatos: Respostas do banco, ja ordenadas por similaridade
+            candidates: Respostas do banco, ja ordenadas por similaridade
                 decrescente.
 
         Returns:
             Nova instancia — a entidade e imutavel.
         """
-        return replace(self, candidatos=tuple(candidatos))
+        return replace(self, candidates=tuple(candidates))
 
-    def com_vereditos(self, vereditos: Sequence[VereditoGeometrico]) -> "RegiaoAnalisada":
+    def with_verdicts(self, verdicts: Sequence[GeometricVerdict]) -> "AnalyzedRegion":
         """Devolve uma copia com os vereditos geometricos preenchidos.
 
         Args:
-            vereditos: Resultados da verificacao geometrica. Pode ser vazio.
+            verdicts: Resultados da verificacao geometrica. Pode ser vazio.
 
         Returns:
             Nova instancia — a entidade e imutavel.
         """
-        return replace(self, vereditos=tuple(vereditos))
+        return replace(self, verdicts=tuple(verdicts))
 
     @property
-    def similaridade_topo(self) -> float:
+    def top_similarity(self) -> float:
         """Similaridade do melhor candidato, ou 0.0 se o banco nao respondeu."""
-        return self.candidatos[0].similaridade if self.candidatos else 0.0
+        return self.candidates[0].similarity if self.candidates else 0.0
 
     @property
-    def marca_topo(self) -> str | None:
+    def top_brand(self) -> str | None:
         """Marca do melhor candidato, ou None se o banco nao respondeu."""
-        return self.candidatos[0].marca if self.candidatos else None
+        return self.candidates[0].brand if self.candidates else None
 
     @property
-    def similaridade_rival(self) -> float:
+    def rival_similarity(self) -> float:
         """Similaridade do melhor candidato de OUTRA marca.
 
         **Nao e o segundo vizinho.** Com dezenas de referencias por marca, o
@@ -91,47 +91,47 @@ class RegiaoAnalisada:
             maxima — mas isso depende de o top-k ser grande o bastante para uma
             segunda marca aparecer.
         """
-        topo = self.marca_topo
-        for candidato in self.candidatos:
-            if candidato.marca != topo:
-                return candidato.similaridade
+        top = self.top_brand
+        for candidate in self.candidates:
+            if candidate.brand != top:
+                return candidate.similarity
         return 0.0
 
     @property
-    def marca_rival(self) -> str | None:
+    def rival_brand(self) -> str | None:
         """Marca do melhor candidato que nao e a do topo, ou None se nao houver."""
-        topo = self.marca_topo
-        for candidato in self.candidatos:
-            if candidato.marca != topo:
-                return candidato.marca
+        top = self.top_brand
+        for candidate in self.candidates:
+            if candidate.brand != top:
+                return candidate.brand
         return None
 
     @property
-    def margem(self) -> float:
+    def margin(self) -> float:
         """Quanto a marca escolhida supera a rival mais proxima.
 
         Returns:
             Diferenca entre a similaridade do topo e a da rival. Mede confianca
             na escolha da MARCA, nao na presenca de logo.
         """
-        return self.similaridade_topo - self.similaridade_rival
+        return self.top_similarity - self.rival_similarity
 
     @property
-    def melhor_veredito(self) -> VereditoGeometrico | None:
+    def best_verdict(self) -> GeometricVerdict | None:
         """Veredito geometrico com mais inliers, ou None se nao houve verificacao.
 
         Returns:
             O veredito mais forte disponivel. None significa que a camada nao
             opinou — o que e diferente de ter opinado contra.
         """
-        if not self.vereditos:
+        if not self.verdicts:
             return None
-        return max(self.vereditos, key=lambda veredito: veredito.inliers)
+        return max(self.verdicts, key=lambda verdict: verdict.inliers)
 
     @property
-    def veredito_confirmado(self) -> VereditoGeometrico | None:
+    def confirmed_verdict(self) -> GeometricVerdict | None:
         """Melhor veredito entre os que confirmam, ou None se nenhum confirma."""
-        confirmados = [veredito for veredito in self.vereditos if veredito.confirma]
-        if not confirmados:
+        confirmed = [verdict for verdict in self.verdicts if verdict.confirms]
+        if not confirmed:
             return None
-        return max(confirmados, key=lambda veredito: veredito.inliers)
+        return max(confirmed, key=lambda verdict: verdict.inliers)

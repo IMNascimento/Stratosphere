@@ -7,18 +7,18 @@ dominio evita o defeito classico de recorte deslocado quando se muda a resolucao
 de inferencia.
 
 Typical usage:
-    caixa = Caixa(x1=10, y1=20, x2=110, y2=80)
-    ampliada = caixa.com_margem(0.12, largura_max=1920, altura_max=1080)
-    sobreposicao = caixa.intersecao_sobre_uniao(outra)
+    box = Box(x1=10, y1=20, x2=110, y2=80)
+    enlarged = box.with_margin(0.12, max_width=1920, max_height=1080)
+    overlap = box.intersection_over_union(other)
 """
 
 from dataclasses import dataclass
 
-from domain.exceptions.domain_exceptions import CaixaInvalidaError
+from domain.exceptions.domain_exceptions import InvalidBoxError
 
 
 @dataclass(frozen=True)
-class Caixa:
+class Box:
     """Regiao retangular em coordenadas absolutas da imagem original.
 
     Attributes:
@@ -37,64 +37,64 @@ class Caixa:
         """Valida a invariante de retangulo com area positiva.
 
         Raises:
-            CaixaInvalidaError: Se alguma coordenada for negativa, ou se a caixa
+            InvalidBoxError: Se alguma coordenada for negativa, ou se a caixa
                 tiver largura ou altura nao positiva.
         """
         if self.x1 < 0 or self.y1 < 0:
-            raise CaixaInvalidaError(f"coordenadas nao podem ser negativas: ({self.x1}, {self.y1})")
+            raise InvalidBoxError(f"coordenadas nao podem ser negativas: ({self.x1}, {self.y1})")
         if self.x2 <= self.x1:
-            raise CaixaInvalidaError(f"x2 deve ser maior que x1: {self.x2} <= {self.x1}")
+            raise InvalidBoxError(f"x2 deve ser maior que x1: {self.x2} <= {self.x1}")
         if self.y2 <= self.y1:
-            raise CaixaInvalidaError(f"y2 deve ser maior que y1: {self.y2} <= {self.y1}")
+            raise InvalidBoxError(f"y2 deve ser maior que y1: {self.y2} <= {self.y1}")
 
     @property
-    def largura(self) -> int:
+    def width(self) -> int:
         """Largura da caixa em pixels."""
         return self.x2 - self.x1
 
     @property
-    def altura(self) -> int:
+    def height(self) -> int:
         """Altura da caixa em pixels."""
         return self.y2 - self.y1
 
     @property
     def area(self) -> int:
         """Area da caixa em pixels quadrados."""
-        return self.largura * self.altura
+        return self.width * self.height
 
     @property
-    def menor_lado(self) -> int:
+    def shorter_side(self) -> int:
         """Menor entre largura e altura, em pixels.
 
         E a dimensao que decide se a regiao ainda carrega forma reconhecivel:
         um recorte de 200x4 pixels tem area razoavel e nenhuma informacao.
         """
-        return min(self.largura, self.altura)
+        return min(self.width, self.height)
 
-    def intersecao_sobre_uniao(self, outra: "Caixa") -> float:
+    def intersection_over_union(self, other: "Box") -> float:
         """Calcula o IoU entre esta caixa e outra.
 
         Args:
-            outra: Caixa a comparar, nas mesmas coordenadas de imagem.
+            other: Caixa a comparar, nas mesmas coordenadas de imagem.
 
         Returns:
             Valor entre 0.0 e 1.0. Zero quando nao ha sobreposicao.
         """
-        x1 = max(self.x1, outra.x1)
-        y1 = max(self.y1, outra.y1)
-        x2 = min(self.x2, outra.x2)
-        y2 = min(self.y2, outra.y2)
+        x1 = max(self.x1, other.x1)
+        y1 = max(self.y1, other.y1)
+        x2 = min(self.x2, other.x2)
+        y2 = min(self.y2, other.y2)
 
-        largura_comum = max(0, x2 - x1)
-        altura_comum = max(0, y2 - y1)
-        intersecao = largura_comum * altura_comum
-        if intersecao == 0:
+        common_width = max(0, x2 - x1)
+        common_height = max(0, y2 - y1)
+        intersection = common_width * common_height
+        if intersection == 0:
             return 0.0
 
-        uniao = self.area + outra.area - intersecao
-        return intersecao / uniao
+        union = self.area + other.area - intersection
+        return intersection / union
 
-    def com_margem(self, fracao: float, largura_max: int, altura_max: int) -> "Caixa":
+    def with_margin(self, fraction: float, max_width: int, max_height: int) -> "Box":
         """Devolve a caixa expandida proporcionalmente, presa aos limites da imagem.
 
         A margem existe porque o detector tende a colar a caixa no logo, e um
@@ -103,28 +103,28 @@ class Caixa:
         descrever a camiseta em vez do logo.
 
         Args:
-            fracao: Proporcao de cada lado a acrescentar. `0.12` acrescenta 12%
+            fraction: Proporcao de cada lado a acrescentar. `0.12` acrescenta 12%
                 da largura de cada lado horizontal e 12% da altura de cada lado
                 vertical. Deve ser nao negativa.
-            largura_max: Largura da imagem, usada como teto para x2.
-            altura_max: Altura da imagem, usada como teto para y2.
+            max_width: Largura da imagem, usada como teto para x2.
+            max_height: Altura da imagem, usada como teto para y2.
 
         Returns:
-            Nova caixa expandida e presa a `[0, largura_max] x [0, altura_max]`.
+            Nova caixa expandida e presa a `[0, max_width] x [0, max_height]`.
 
         Raises:
-            CaixaInvalidaError: Se `fracao` for negativa, ou se os limites da
+            InvalidBoxError: Se `fraction` for negativa, ou se os limites da
                 imagem forem menores que a origem da caixa.
         """
-        if fracao < 0:
-            raise CaixaInvalidaError(f"fracao de margem nao pode ser negativa: {fracao}")
+        if fraction < 0:
+            raise InvalidBoxError(f"fracao de margem nao pode ser negativa: {fraction}")
 
-        margem_x = int(round(self.largura * fracao))
-        margem_y = int(round(self.altura * fracao))
+        margin_x = int(round(self.width * fraction))
+        margin_y = int(round(self.height * fraction))
 
-        return Caixa(
-            x1=max(0, self.x1 - margem_x),
-            y1=max(0, self.y1 - margem_y),
-            x2=min(largura_max, self.x2 + margem_x),
-            y2=min(altura_max, self.y2 + margem_y),
+        return Box(
+            x1=max(0, self.x1 - margin_x),
+            y1=max(0, self.y1 - margin_y),
+            x2=min(max_width, self.x2 + margin_x),
+            y2=min(max_height, self.y2 + margin_y),
         )

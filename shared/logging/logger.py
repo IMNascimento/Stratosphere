@@ -5,48 +5,48 @@ precise decidir formato de saida por conta propria, e para que a configuracao
 aconteca uma vez so, no entrypoint.
 
 Typical usage:
-    configurar_logging("INFO")
-    log = obter_logger(__name__)
-    log.info("banco carregado: %d referencias", banco.tamanho())
+    configure_logging("INFO")
+    log = get_logger(__name__)
+    log.info("banco carregado: %d referencias", database.size())
 """
 
 import logging
 import sys
 
-_FORMATO = "%(levelname)-7s %(name)-28s %(message)s"
-_NIVEIS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR"})
+_FORMAT = "%(levelname)-7s %(name)-28s %(message)s"
+_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR"})
 
 
-def configurar_logging(nivel: str = "INFO") -> None:
+def configure_logging(level: str = "INFO") -> None:
     """Configura a saida de log do processo. Idempotente.
 
     Args:
-        nivel: Nome do nivel, entre DEBUG, INFO, WARNING e ERROR.
+        level: Nome do nivel, entre DEBUG, INFO, WARNING e ERROR.
 
     Raises:
         ValueError: Se o nivel nao existir.
     """
-    if nivel.upper() not in _NIVEIS:
-        raise ValueError(f"nivel {nivel!r} desconhecido. Validos: {sorted(_NIVEIS)}")
+    if level.upper() not in _LEVELS:
+        raise ValueError(f"nivel {level!r} desconhecido. Validos: {sorted(_LEVELS)}")
 
-    raiz = logging.getLogger()
-    if raiz.handlers:
-        raiz.setLevel(nivel.upper())
+    root = logging.getLogger()
+    if root.handlers:
+        root.setLevel(level.upper())
         return
 
-    manipulador = logging.StreamHandler(sys.stderr)
-    manipulador.setFormatter(logging.Formatter(_FORMATO))
-    raiz.addHandler(manipulador)
-    raiz.setLevel(nivel.upper())
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter(_FORMAT))
+    root.addHandler(handler)
+    root.setLevel(level.upper())
 
 
-def obter_logger(nome: str) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
     """Retorna o logger daquele modulo.
 
     Args:
-        nome: Normalmente `__name__` do modulo chamador.
+        name: Normalmente `__name__` do modulo chamador.
 
     Returns:
         O logger correspondente.
     """
-    return logging.getLogger(nome)
+    return logging.getLogger(name)

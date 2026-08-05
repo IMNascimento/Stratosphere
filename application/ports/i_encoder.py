@@ -5,8 +5,8 @@ coincidem. E por isso que funciona sem treino por marca, e e por isso que marca
 nova custa minutos em vez de um ciclo de retreino.
 
 Typical usage:
-    vetores = codificador.codificar([recorte_a, recorte_b])
-    assinatura = codificador.identificacao()
+    vectors = encoder.encode([crop_a, crop_b])
+    signature = encoder.signature()
 """
 
 from abc import ABC, abstractmethod
@@ -15,21 +15,21 @@ from collections.abc import Sequence
 import numpy as np
 from numpy.typing import NDArray
 
-from application.ports.i_fonte_de_imagens import ImagemRgb
+from application.ports.i_image_source import RgbImage
 
 
-class ICodificador(ABC):
+class IEncoder(ABC):
     """Transforma regioes recortadas em vetores comparaveis por cosseno."""
 
     @abstractmethod
-    def codificar(self, recortes: Sequence[ImagemRgb]) -> NDArray[np.float32]:
+    def encode(self, crops: Sequence[RgbImage]) -> NDArray[np.float32]:
         """Converte recortes em vetores.
 
         Args:
-            recortes: Regioes ja recortadas e no tamanho esperado pelo modelo.
+            crops: Regioes ja recortadas e no tamanho esperado pelo modelo.
 
         Returns:
-            Matriz `(len(recortes), dimensao)` em float32, com cada linha
+            Matriz `(len(crops), dimensao)` em float32, com cada linha
             **L2-normalizada**. A normalizacao e contrato: e o que torna o
             produto interno equivalente ao cosseno e permite que a busca seja
             uma unica multiplicacao de matriz.
@@ -37,7 +37,7 @@ class ICodificador(ABC):
         ...
 
     @abstractmethod
-    def identificacao(self) -> str:
+    def signature(self) -> str:
         """Retorna a assinatura estavel do codificador.
 
         A assinatura inclui o modelo **e o modo de agregacao**: o mesmo modelo
@@ -53,15 +53,15 @@ class ICodificador(ABC):
         ...
 
     @abstractmethod
-    def dimensao(self) -> int:
+    def dimension(self) -> int:
         """Retorna a dimensao dos vetores produzidos.
 
         Returns:
-            Numero de componentes. Valido apenas apos `preparar()`.
+            Numero de componentes. Valido apenas apos `prepare()`.
         """
         ...
 
     @abstractmethod
-    def preparar(self) -> None:
+    def prepare(self) -> None:
         """Carrega os pesos do modelo. Idempotente."""
         ...

@@ -7,28 +7,28 @@ qualquer adaptador e uma mudanca aqui e em mais lugar nenhum.
 Tambem e o unico lugar que le variavel de ambiente, quando houver.
 
 Typical usage:
-    container = construir_container(AppConfig(), Path("indice"))
-    saida = container.analisar_imagem.execute(comando)
+    container = build_container(AppConfig(), Path("indice"))
+    output = container.analyze_image.execute(command)
 """
 
 from dataclasses import dataclass
 from pathlib import Path
 
-from application.use_cases.analisar_imagem import AnalisarImagemUseCase
-from application.use_cases.auditar_banco import AuditarBancoUseCase
-from application.use_cases.construir_banco import ConstruirBancoUseCase
+from application.use_cases.analyze_image import AnalyzeImageUseCase
+from application.use_cases.audit_database import AuditDatabaseUseCase
+from application.use_cases.build_database import BuildDatabaseUseCase
 from config.settings import AppConfig
-from domain.services.grupos_de_confusao import GruposDeConfusao
-from domain.services.roteador_de_fila import Calibragem, PesosDeEvidencia, RoteadorDeFila
-from infrastructure.codificacao.dinov2_codificador import Dinov2Codificador
-from infrastructure.deteccao.owlv2_detector import Owlv2Detector
-from infrastructure.geometria.sift_verificador import SiftVerificador
-from infrastructure.imagem.pillow_fonte_imagens import PillowFonteImagens
-from infrastructure.indice.banco_referencia_npz import (
-    ARQUIVO_DE_METADADOS,
-    ARQUIVO_DE_VETORES,
-    BancoReferenciaNpz,
-    GravadorBancoNpz,
+from domain.services.confusion_groups import ConfusionGroups
+from domain.services.queue_router import Calibration, EvidenceWeights, QueueRouter
+from infrastructure.detection.owlv2_detector import Owlv2Detector
+from infrastructure.encoding.dinov2_encoder import Dinov2Encoder
+from infrastructure.geometry.sift_verifier import SiftVerifier
+from infrastructure.image.pillow_image_source import PillowImageSource
+from infrastructure.index.npz_reference_database import (
+    METADATA_FILE,
+    VECTORS_FILE,
+    NpzDatabaseWriter,
+    NpzReferenceDatabase,
 )
 
 
@@ -37,75 +37,75 @@ class Container:
     """Casos de uso prontos para uso, com as dependencias ja injetadas.
 
     Attributes:
-        analisar_imagem: Pipeline completa para uma imagem. None quando o banco
+        analyze_image: Pipeline completa para uma imagem. None quando o banco
             ainda nao existe — construir o banco nao exige banco.
-        construir_banco: Pasta de referencias para indice vetorial.
-        auditar_banco: Pares de marcas confundiveis. None sem banco.
-        fonte_de_imagens: Exposto porque o entrypoint precisa listar pastas.
+        build_database: Pasta de referencias para indice vetorial.
+        audit_database: Pares de marcas confundiveis. None sem banco.
+        image_source: Exposto porque o entrypoint precisa listar pastas.
     """
 
-    construir_banco: ConstruirBancoUseCase
-    fonte_de_imagens: PillowFonteImagens
-    analisar_imagem: AnalisarImagemUseCase | None = None
-    auditar_banco: AuditarBancoUseCase | None = None
+    build_database: BuildDatabaseUseCase
+    image_source: PillowImageSource
+    analyze_image: AnalyzeImageUseCase | None = None
+    audit_database: AuditDatabaseUseCase | None = None
 
 
-def construir_container(config: AppConfig, caminho_do_banco: Path) -> Container:
+def build_container(config: AppConfig, database_path: Path) -> Container:
     """Monta o grafo completo de dependencias.
 
     O banco de referencia e carregado quando existe. Quando nao existe, os casos
     de uso que dependem dele ficam em None em vez de a montagem falhar — isso
-    permite que `construir_banco` rode numa instalacao limpa, que e exatamente o
+    permite que `build_database` rode numa instalacao limpa, que e exatamente o
     primeiro comando que alguem executa.
 
     Args:
         config: Configuracao completa.
-        caminho_do_banco: Pasta do indice vetorial.
+        database_path: Pasta do indice vetorial.
 
     Returns:
         O container com os casos de uso disponiveis.
 
     Raises:
-        CodificadorIncompativelError: Se o banco existir mas tiver sido
-            construido com outro codificador.
+        IncompatibleEncoderError: Se o banco existir mas tiver sido construido
+            com outro codificador.
     """
-    fonte = PillowFonteImagens(lado_minimo_para_ampliar=config.codificador.lado_minimo_para_ampliar)
-    codificador = Dinov2Codificador(
-        config=config.codificador,
-        dispositivo=config.dispositivo,
-        precisao=config.precisao,
+    source = PillowImageSource(min_side_to_upscale=config.encoder.min_side_to_upscale)
+    encoder = Dinov2Encoder(
+        config=config.encoder,
+        device=config.device,
+        precision=config.precision,
     )
-    construir = ConstruirBancoUseCase(
-        codificador=codificador, fonte=fonte, gravar=GravadorBancoNpz(), config=config
+    build = BuildDatabaseUseCase(
+        encoder=encoder, source=source, writer=NpzDatabaseWriter(), config=config
     )
-    container = Container(construir_banco=construir, fonte_de_imagens=fonte)
+    container = Container(build_database=build, image_source=source)
 
-    if not _banco_existe(caminho_do_banco):
+    if not _database_exists(database_path):
         return container
 
-    banco = BancoReferenciaNpz.carregar(caminho_do_banco, codificador.identificacao())
-    analisar = AnalisarImagemUseCase(
+    database = NpzReferenceDatabase.load(database_path, encoder.signature())
+    analyze = AnalyzeImageUseCase(
         detector=Owlv2Detector(
             config=config.detector,
-            dispositivo=config.dispositivo,
-            precisao=config.precisao,
+            device=config.device,
+            precision=config.precision,
         ),
-        codificador=codificador,
-        verificador=SiftVerificador(config=config.geometria),
-        fonte=fonte,
-        banco=banco,
-        roteador=_montar_roteador(config),
+        encoder=encoder,
+        verifier=SiftVerifier(config=config.geometry),
+        source=source,
+        database=database,
+        router=_build_router(config),
         config=config,
     )
     return Container(
-        construir_banco=construir,
-        fonte_de_imagens=fonte,
-        analisar_imagem=analisar,
-        auditar_banco=AuditarBancoUseCase(banco=banco, config=config),
+        build_database=build,
+        image_source=source,
+        analyze_image=analyze,
+        audit_database=AuditDatabaseUseCase(database=database, config=config),
     )
 
 
-def _montar_roteador(config: AppConfig) -> RoteadorDeFila:
+def _build_router(config: AppConfig) -> QueueRouter:
     """Constroi o servico de dominio que decide as filas.
 
     Args:
@@ -118,39 +118,39 @@ def _montar_roteador(config: AppConfig) -> RoteadorDeFila:
         ValueError: Se os pesos configurados nao somarem 1 ou se algum limiar
             estiver invertido.
     """
-    roteamento = config.roteamento
-    return RoteadorDeFila(
-        pesos=PesosDeEvidencia(
-            similaridade=roteamento.peso_similaridade,
-            margem=roteamento.peso_margem,
-            geometria=roteamento.peso_geometria,
-            deteccao=roteamento.peso_deteccao,
+    routing = config.routing
+    return QueueRouter(
+        weights=EvidenceWeights(
+            similarity=routing.similarity_weight,
+            margin=routing.margin_weight,
+            geometry=routing.geometry_weight,
+            detection=routing.detection_weight,
         ),
-        calibragem=Calibragem(
-            similaridade_minima=roteamento.similaridade_minima,
-            similaridade_maxima=roteamento.similaridade_maxima,
-            margem_confiante=roteamento.margem_confiante,
-            inliers_confiantes=roteamento.inliers_confiantes,
-            aceite=roteamento.aceite,
-            rejeicao=roteamento.rejeicao,
-            orfao_inliers_minimos=roteamento.orfao_inliers_minimos,
-            orfao_similaridade_maxima=roteamento.orfao_similaridade_maxima,
+        calibration=Calibration(
+            min_similarity=routing.min_similarity,
+            max_similarity=routing.max_similarity,
+            confident_margin=routing.confident_margin,
+            confident_inliers=routing.confident_inliers,
+            accept=routing.accept,
+            reject=routing.reject,
+            orphan_min_inliers=routing.orphan_min_inliers,
+            orphan_max_similarity=routing.orphan_max_similarity,
         ),
-        grupos=GruposDeConfusao(
-            grupos=config.confusao.grupos,
-            negativas=config.confusao.negativas,
-            margem_de_empate=config.confusao.margem_de_empate,
+        groups=ConfusionGroups(
+            groups=config.confusion.groups,
+            negatives=config.confusion.negatives,
+            tie_margin=config.confusion.tie_margin,
         ),
     )
 
 
-def _banco_existe(caminho: Path) -> bool:
+def _database_exists(path: Path) -> bool:
     """Verifica se ha um banco gravado no caminho.
 
     Args:
-        caminho: Pasta do indice.
+        path: Pasta do indice.
 
     Returns:
         True quando os dois arquivos do banco estao presentes.
     """
-    return (caminho / ARQUIVO_DE_VETORES).exists() and (caminho / ARQUIVO_DE_METADADOS).exists()
+    return (path / VECTORS_FILE).exists() and (path / METADATA_FILE).exists()
