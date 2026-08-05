@@ -14,10 +14,30 @@ dependencies = [
     "accelerate (>=0.30)",
     "safetensors (>=0.4)",
     "opencv-contrib-python-headless (>=4.9)",
+    "python-dotenv (>=1.2.2,<2.0.0)",
+    "torch (==2.13.0)",
+    "torchvision (==0.28.0)",
 ]
 
 [project.scripts]
 stratosphere = "entrypoints.cli.main:main"
+
+# Indice de wheels CUDA do PyTorch. `priority = "explicit"` significa que nada e
+# procurado aqui por acaso: so os pacotes que apontarem para esta fonte por nome.
+# O resto continua vindo do PyPI.
+#
+# O canal e o cu130 porque e o unico com torch 2.13.0 para cp311/win_amd64 —
+# cu126 e cu128 param no 2.9. Sem esta fonte, o PyPI entrega a build `+cpu` e
+# `.to("cuda:0")` levanta "Torch not compiled with CUDA enabled", que nao e um
+# problema de driver nem de configuracao: e o pacote errado.
+[[tool.poetry.source]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+priority = "explicit"
+
+[tool.poetry.dependencies]
+torch = { version = "2.13.0", source = "pytorch-cu130" }
+torchvision = { version = "0.28.0", source = "pytorch-cu130" }
 
 [tool.poetry]
 packages = [
