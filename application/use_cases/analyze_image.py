@@ -88,6 +88,10 @@ class AnalyzeImageUseCase:
         crops = self._crop_all(image, detections)
         vectors = self._encoder.encode(crops)
 
+        # Uma consulta so por imagem: o consenso precisa saber quantas
+        # referencias a marca tem, e a contagem nao muda entre regioes.
+        references_by_brand = self._database.references_by_brand()
+
         decided: list[tuple[AnalyzedRegion, Decision]] = []
         for index, (detection, crop) in enumerate(zip(detections, crops, strict=True)):
             candidates = self._database.search(vectors[index], self._config.search.neighbors)
@@ -96,6 +100,9 @@ class AnalyzeImageUseCase:
                 identifier=f"{command.path.stem}-{index:03d}",
                 detection=detection,
             ).with_candidates(candidates)
+            region = region.with_brand_references(
+                references_by_brand.get(region.top_brand or "", 0)
+            )
 
             if self._config.geometry.enabled and candidates:
                 region = region.with_verdicts(self._verifier.verify(crop, candidates))

@@ -33,12 +33,17 @@ class AnalyzedRegion:
         verdicts: Resultados da verificacao geometrica. Pode ser vazio: nem
             toda regiao tem pontos suficientes, e ausencia de veredito e
             diferente de veredito negativo.
+        brand_references: Quantas referencias a marca do topo tem no banco.
+            Serve de teto para o consenso — sem isso, marca com 5 referencias
+            jamais alcancaria o mesmo consenso de uma com 40, e a cobertura do
+            banco viraria criterio de decisao sem ninguem ter escolhido isso.
     """
 
     identifier: str
     detection: Detection
     candidates: tuple[Candidate, ...] = field(default_factory=tuple)
     verdicts: tuple[GeometricVerdict, ...] = field(default_factory=tuple)
+    brand_references: int = 0
 
     def with_candidates(self, candidates: Sequence[Candidate]) -> "AnalyzedRegion":
         """Devolve uma copia com os candidatos do banco preenchidos.
@@ -62,6 +67,66 @@ class AnalyzedRegion:
             Nova instancia — a entidade e imutavel.
         """
         return replace(self, verdicts=tuple(verdicts))
+
+    def with_brand_references(self, quantity: int) -> "AnalyzedRegion":
+        """Devolve uma copia sabendo quantas referencias a marca do topo tem.
+
+        Args:
+            quantity: Contagem vinda do banco. Zero significa desconhecido, e
+                o consenso cai para a fracao simples sobre o top-k.
+
+        Returns:
+            Nova instancia — a entidade e imutavel.
+        """
+        return replace(self, brand_references=max(0, quantity))
+
+    @property
+    def agreeing_candidates(self) -> int:
+        """Quantos candidatos do top-k afirmam a marca escolhida.
+
+        E o numero ABSOLUTO, e nao a fracao. Existe porque o consenso e
+        normalizado pelo teto da marca: uma marca com 2 referencias no banco
+        alcanca consenso 1.0 com dois candidatos, e isso nao vale o mesmo que
+        25 de 25. Quem decide aceite sozinho precisa olhar os dois numeros.
+
+        Returns:
+            Contagem de candidatos com a marca do topo. Zero se o banco nao
+            respondeu.
+        """
+        if not self.candidates:
+            return 0
+        top = self.top_brand
+        return sum(1 for candidate in self.candidates if candidate.brand == top)
+
+    @property
+    def brand_consensus(self) -> float:
+        """Quanto do top-k concorda com a marca escolhida.
+
+        **E o sinal que separa casamento real de vizinho mais proximo por
+        acaso**, e faz isso melhor que a similaridade absoluta. Medido em imagem
+        real: um swoosh de verdade teve similaridade 0.712 com 21 de 25
+        vizinhos da mesma marca; um texto sem marca nenhuma teve similaridade
+        **maior**, 0.837, com apenas 3 de 25 — e os demais espalhados entre
+        quatro marcas sem relacao. Pela similaridade sozinha, o ruido ganha do
+        logo; pelo consenso, nao.
+
+        O teto e `min(top-k, referencias da marca)`: uma marca com 5 referencias
+        no banco nunca poderia ocupar 25 posicoes, e comparar contra 25 puniria
+        marca pouco coberta por um limite que e do banco, nao da evidencia.
+
+        Returns:
+            Entre 0.0 e 1.0. Zero quando o banco nao respondeu.
+        """
+        if not self.candidates:
+            return 0.0
+        top = self.top_brand
+        agreeing = sum(1 for candidate in self.candidates if candidate.brand == top)
+        ceiling = len(self.candidates)
+        if self.brand_references:
+            ceiling = min(ceiling, self.brand_references)
+        if ceiling <= 0:
+            return 0.0
+        return min(1.0, agreeing / ceiling)
 
     @property
     def top_similarity(self) -> float:

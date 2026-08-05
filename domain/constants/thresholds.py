@@ -49,3 +49,17 @@ DEFAULT_MIN_EDGE_DENSITY: float = 0.004
 # MESMO logo, e nao dois logos vizinhos. Nao e IoU: IoU e cego para aninhamento,
 # e recorte dentro de recorte sai com IoU baixo mesmo estando 100% contido.
 DEFAULT_NESTED_CONTAINMENT: float = 0.80
+
+
+# Consenso a partir do qual a regiao e aceita sem humano, independentemente da
+# pontuacao. MEDIDO em 84 imagens rotuladas: acima de 0.80 nao houve um unico
+# erro em 15 regioes. E o sinal que resgata logo chapado — swoosh, wordmark —
+# cuja geometria nao tem canto para dar ponto e cuja similaridade absoluta cai
+# na faixa do ruido.
+DEFAULT_CONSENSUS_ACCEPT: float = 0.80
+
+# Concordantes ABSOLUTOS exigidos junto com o consenso. Sem isto, marca com 2
+# referencias no banco alcanca consenso 1.0 trivialmente — o teto do consenso e
+# `min(top-k, referencias da marca)`, e unanimidade de 2 nao vale o mesmo que
+# unanimidade de 25.
+DEFAULT_CONSENSUS_MIN_AGREEING: int = 8

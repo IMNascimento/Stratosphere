@@ -130,6 +130,7 @@ def _build_router(config: AppConfig) -> QueueRouter:
     return QueueRouter(
         weights=EvidenceWeights(
             similarity=routing.similarity_weight,
+            consensus=routing.consensus_weight,
             margin=routing.margin_weight,
             geometry=routing.geometry_weight,
             detection=routing.detection_weight,
@@ -143,6 +144,8 @@ def _build_router(config: AppConfig) -> QueueRouter:
             reject=routing.reject,
             orphan_min_inliers=routing.orphan_min_inliers,
             orphan_max_similarity=routing.orphan_max_similarity,
+            consensus_accept=routing.consensus_accept,
+            consensus_min_agreeing=routing.consensus_min_agreeing,
         ),
         groups=ConfusionGroups(
             groups=config.confusion.groups,

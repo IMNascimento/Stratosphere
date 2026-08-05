@@ -160,6 +160,9 @@ class RoutingConfig:
 
     Attributes:
         similarity_weight: Contribuicao da semelhanca com a melhor referencia.
+        consensus_weight: Contribuicao de quanto o top-k concorda com a marca
+            escolhida. Peso alto de proposito: medido em imagem real, consenso
+            separa logo verdadeiro de ruido melhor que similaridade absoluta.
         margin_weight: Contribuicao da vantagem sobre a rival mais proxima.
         geometry_weight: Contribuicao da confirmacao de mesmo desenho.
         detection_weight: Contribuicao da confianca do detector. Pequeno de
@@ -173,15 +176,18 @@ class RoutingConfig:
         orphan_min_inliers: Inliers minimos para o orfao geometrico disparar.
         orphan_max_similarity: Similaridade abaixo da qual, havendo confirmacao
             geometrica, a regiao e orfa.
+        consensus_accept: Consenso a partir do qual a regiao e aceita sem humano.
+        consensus_min_agreeing: Concordantes absolutos exigidos junto.
         nested_containment: Fracao da menor caixa coberta pela maior a partir da
             qual dois recortes da MESMA marca sao o mesmo logo, e so o de melhor
             pontuacao entra no relatorio. Nao e IoU — ver `NestedRegionResolver`.
     """
 
-    similarity_weight: float = 0.36
-    margin_weight: float = 0.16
-    geometry_weight: float = 0.40
-    detection_weight: float = 0.08
+    similarity_weight: float = 0.30
+    consensus_weight: float = 0.20
+    margin_weight: float = 0.12
+    geometry_weight: float = 0.32
+    detection_weight: float = 0.06
 
     min_similarity: float = thresholds.DEFAULT_MIN_SIMILARITY
     max_similarity: float = thresholds.DEFAULT_MAX_SIMILARITY
@@ -191,6 +197,8 @@ class RoutingConfig:
     reject: float = thresholds.DEFAULT_REJECT
     orphan_min_inliers: int = thresholds.DEFAULT_ORPHAN_MIN_INLIERS
     orphan_max_similarity: float = thresholds.DEFAULT_ORPHAN_MAX_SIMILARITY
+    consensus_accept: float = thresholds.DEFAULT_CONSENSUS_ACCEPT
+    consensus_min_agreeing: int = thresholds.DEFAULT_CONSENSUS_MIN_AGREEING
     nested_containment: float = thresholds.DEFAULT_NESTED_CONTAINMENT
 
 
