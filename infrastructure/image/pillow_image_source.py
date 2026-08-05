@@ -66,7 +66,40 @@ class PillowImageSource(IImageSource):
         file = Image.open(path)
         # `exif_transpose` devolve None quando nao ha metadado de orientacao.
         oriented = ImageOps.exif_transpose(file) or file
-        return oriented.convert("RGB")
+        return self._flatten(oriented)
+
+    @staticmethod
+    def _flatten(image: RgbImage) -> RgbImage:
+        """Achata transparencia sobre fundo neutro antes de virar RGB.
+
+        `convert("RGB")` puro **descarta** o canal alfa e mantem o RGB que
+        estiver embaixo — que em arte vetorial exportada costuma ser preto. Uma
+        logo escura sobre fundo transparente vira, entao, um retangulo preto
+        solido. Medido no banco real: quatro referencias `oficial/*.png` tinham
+        brilho medio 0.0, eram vetores praticamente identicos entre si, e a
+        melhor correspondencia da logo oficial da nike era uma referencia de
+        cimed a 0.951 — com zero nike no top-25.
+
+        O fundo e o mesmo cinza do letterbox de proposito. Medido na mesma
+        referencia: composta sobre este cinza ela puxa 19 de 25 vizinhos nike;
+        sobre branco, 7 de 25. A uniformidade com o preenchimento que o resto da
+        pipeline ja usa vale mais que o branco convencional de arte.
+
+        Args:
+            image: Imagem recem aberta, com ou sem canal alfa.
+
+        Returns:
+            A imagem em RGB, sem transparencia.
+        """
+        transparent = image.mode in ("RGBA", "LA") or (
+            image.mode == "P" and "transparency" in image.info
+        )
+        if not transparent:
+            return image.convert("RGB")
+        rgba = image.convert("RGBA")
+        canvas = Image.new("RGB", rgba.size, _FILL_COLOR)
+        canvas.paste(rgba, mask=rgba.split()[-1])
+        return canvas
 
     def dimensions(self, image: RgbImage) -> tuple[int, int]:
         """Retorna `(largura, altura)` da imagem.
