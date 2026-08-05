@@ -9,19 +9,25 @@ O lugar de sobrescrever e `config/settings.py`, nunca este arquivo.
 """
 
 # Similaridade abaixo da qual a evidencia do banco conta como nula.
-# Deve ficar proximo do percentil alto da distribuicao de regioes SEM logo: e o
-# ponto em que o banco para de distinguir sinal de fundo.
-DEFAULT_MIN_SIMILARITY: float = 0.68
+# MEDIDO em 84 imagens rotuladas (158 regioes): e o percentil 90 dos ERROS. O
+# valor anterior, 0.68, ficava abaixo disso — o sistema pagava credito de
+# similaridade para ruido.
+DEFAULT_MIN_SIMILARITY: float = 0.755
 
 # Similaridade a partir da qual a evidencia do banco conta como maxima.
-# Proximo da mediana das correspondencias corretas.
-DEFAULT_MAX_SIMILARITY: float = 0.97
+# MEDIDO: percentil 75 dos acertos. Os acertos tem mediana 0.930 e p90 0.970;
+# os erros, mediana 0.539 e p90 0.755 — a similaridade separa bem, e a escala
+# agora comeca onde o ruido acaba.
+DEFAULT_MAX_SIMILARITY: float = 0.959
 
 # Margem (topo menos rival de outra marca) que ja caracteriza escolha confiante.
 DEFAULT_CONFIDENT_MARGIN: float = 0.15
 
 # Inliers de RANSAC que ja caracterizam geometria confirmada.
-DEFAULT_CONFIDENT_INLIERS: float = 25.0
+# MEDIDO: os erros tem mediana 4 inliers e p90 de 8; os acertos, mediana 27 e
+# p25 de 17. Em 17 a evidencia ja esta muito acima de qualquer ruido — exigir o
+# p75 (49) puniria logo chapado, que rende poucos pontos por natureza.
+DEFAULT_CONFIDENT_INLIERS: float = 17.0
 
 # Pontuacao a partir da qual a regiao e aceita sem humano.
 DEFAULT_ACCEPT: float = 0.80
@@ -38,7 +44,10 @@ DEFAULT_ORPHAN_MIN_INLIERS: int = 20
 
 # Similaridade abaixo da qual, havendo confirmacao geometrica, a regiao e orfa:
 # o banco tem a marca e nao tem esta variacao dela.
-DEFAULT_ORPHAN_MAX_SIMILARITY: float = 0.88
+# MEDIDO: percentil 10 dos acertos. Em 0.88 a regra disparava no MEIO da faixa
+# normal — uma regiao com 27 inliers e similaridade 0.869 virava orfa por onze
+# milesimos, sem faltar variacao nenhuma no banco.
+DEFAULT_ORPHAN_MAX_SIMILARITY: float = 0.664
 
 # Densidade de borda abaixo da qual a imagem nao tem estrutura suficiente para
 # valer uma passada de detector. Permissivo de proposito — o que se descarta
