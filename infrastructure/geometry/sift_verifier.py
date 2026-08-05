@@ -38,6 +38,9 @@ from application.ports.i_image_source import RgbImage
 from config.settings import GeometryConfig
 from domain.value_objects.candidate import Candidate
 from domain.value_objects.geometric_verdict import GeometricVerdict
+from shared.logging.logger import get_logger
+
+log = get_logger(__name__)
 
 # Abaixo disto nem vale tentar casar: o ajuste robusto encontra concordancia em
 # qualquer conjunto pequeno de pontos.
@@ -88,19 +91,18 @@ class SiftVerifier(IGeometricVerifier):
         self._prepare()
         points, descriptors = self._extract(self._to_gray(crop))
         if descriptors is None or len(points) < _MIN_POINTS:
-            quantity = len(points) if points is not None else 0
-            return tuple(
-                GeometricVerdict(
-                    brand=candidate.brand,
-                    inliers=0,
-                    matches=0,
-                    confirms=False,
-                    reason=f"regiao com {quantity} pontos, minimo {_MIN_POINTS}",
-                )
-                for candidate in selected
-            )
+            # Silencio, e nao veredito zerado. Um veredito com 0 inliers diz
+            # "comparei e nao bate"; aqui nao houve comparacao nenhuma — nao ha
+            # canto para extrair ponto. Devolver 0 inliers faria o roteador
+            # aplicar o peso da geometria multiplicado por zero, derrubando o
+            # teto da pontuacao em 40% de uma regiao que nunca teve chance. E o
+            # caso de todo logo chapado: swoosh, wordmark, simbolo vetorial.
+            return ()
 
-        return tuple(self._verify_pair(points, descriptors, candidate) for candidate in selected)
+        verdicts = tuple(
+            self._verify_pair(points, descriptors, candidate) for candidate in selected
+        )
+        return tuple(verdict for verdict in verdicts if verdict is not None)
 
     # -- etapas internas ---------------------------------------------------
 
@@ -209,7 +211,9 @@ class SiftVerifier(IGeometricVerifier):
         """
         return np.asarray(image.convert("L"), dtype=np.uint8)
 
-    def _verify_pair(self, points: Any, descriptors: Any, candidate: Candidate) -> GeometricVerdict:
+    def _verify_pair(
+        self, points: Any, descriptors: Any, candidate: Candidate
+    ) -> GeometricVerdict | None:
         """Verifica a regiao contra uma referencia especifica.
 
         Args:
@@ -218,26 +222,29 @@ class SiftVerifier(IGeometricVerifier):
             candidate: Candidato cuja referencia sera comparada.
 
         Returns:
-            O veredito, com o motivo preenchido quando nao confirma.
+            O veredito, com o motivo preenchido quando nao confirma. **None
+            quando nao houve comparacao** — referencia ilegivel ou sem pontos
+            suficientes. Ausencia de veredito e diferente de veredito negativo,
+            e so o None preserva essa distincao ate o roteador.
         """
         cv2 = self._cv2()
         try:
             reference_points, reference_descriptors = self._extract_reference(candidate.reference)
         except Exception as error:  # noqa: BLE001 - referencia ilegivel nao derruba a analise
-            return GeometricVerdict(candidate.brand, 0, 0, False, f"referencia ilegivel: {error}")
+            log.warning("referencia ilegivel, geometria nao opinou: %s", error)
+            return None
 
         if reference_descriptors is None or len(reference_points) < _MIN_POINTS:
-            return GeometricVerdict(candidate.brand, 0, 0, False, "referencia com poucos pontos")
+            return None
 
         good = self._filter_by_ratio(descriptors, reference_descriptors)
         if len(good) < _POINTS_FOR_HOMOGRAPHY:
-            return GeometricVerdict(
-                candidate.brand,
-                0,
-                len(good),
-                False,
-                f"{len(good)} correspondencias, minimo {_POINTS_FOR_HOMOGRAPHY}",
-            )
+            # Tambem e silencio. Abaixo de quatro pares nao existe transformacao
+            # a estimar, entao a pergunta desta camada — "e o mesmo desenho sob
+            # alguma transformacao coerente?" — nao chegou a ser feita. Devolver
+            # veredito negativo aqui seria afirmar que os desenhos diferem, o
+            # que a camada nao tem como saber.
+            return None
 
         source = np.array([points[pair.queryIdx].pt for pair in good], dtype=np.float32).reshape(
             -1, 1, 2
