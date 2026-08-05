@@ -43,7 +43,11 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "ANN"]
-ignore = ["E501"]
+# E501: linha longa — o ruff format ja cuida do limite.
+# ANN101/ANN102: exigem anotar `self` e `cls`. Contradizem diretamente
+#   .claude/standards/languages/PYTHON.md ("self e cls nunca sao anotados"),
+#   e foram descontinuadas no proprio ruff. O padrao do projeto prevalece.
+ignore = ["E501", "ANN101", "ANN102"]
 
 [tool.ruff.lint.isort]
 known-first-party = [
