@@ -84,12 +84,34 @@ dependencias vivem no ambiente do Poetry.
 
 ```bash
 poetry install
+cp .env.example .env      # opcional — so precisa para modelo de acesso restrito
 poetry run stratosphere ambiente
 ```
 
-`ambiente` confere dependencias, aceleracao e banco **antes** de qualquer
+`ambiente` confere dependencias, token, aceleracao e banco **antes** de qualquer
 download de peso de modelo. Rode primeiro: ele transforma meia hora de espera
 seguida de erro num diagnostico de um segundo.
+
+### Variaveis de ambiente
+
+`.env` e ignorado pelo git; `.env.example` documenta cada variavel e e o arquivo
+versionado. Nada disso e obrigatorio — sem `.env` o projeto roda com os defaults
+de `config/settings.py` e baixa modelo de acesso livre.
+
+| variavel | para que serve |
+|---|---|
+| `HF_TOKEN` | baixar peso com **acesso restrito** no Hugging Face. Gere em [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) e aceite os termos na pagina do modelo — token valido sem termos aceitos tambem recebe 403 |
+| `HF_HOME` | onde o hub guarda os pesos. Util quando o disco do usuario nao cabe varios modelos de visao |
+| `STRATOSPHERE_DETECTOR_MODEL` · `STRATOSPHERE_ENCODER_MODEL` | trocar o peso que os adaptadores carregam |
+| `STRATOSPHERE_DEVICE` · `STRATOSPHERE_PRECISION` | `cuda:0`/`cpu` e `float16`/`float32` |
+
+Precedencia: **default do codigo < `.env` < variavel exportada no shell < flag da
+CLI**. O `.env` nao sobrescreve variavel que ja esta no processo, e variavel
+vazia nao sobrescreve nada.
+
+O token nunca entra em `AppConfig` nem em log: ele so e carregado para o
+ambiente, que e de onde o `huggingface_hub` o le. O `ambiente` reporta apenas
+`definido` ou `ausente`.
 
 ---
 
@@ -140,13 +162,76 @@ poetry run stratosphere analisar --entrada foto.jpg --banco indice/
 poetry run stratosphere analisar --entrada fotos/ --banco indice/ --saida resultado.json
 
 # sem GPU
-poetry run stratosphere analisar --entrada fotos/ --cpu
+poetry run stratosphere --cpu analisar --entrada fotos/
+
+# conferir no olho: grava copias com as caixas e os rotulos desenhados
+poetry run stratosphere analisar --entrada fotos/ --anotar runs/anotadas/
 ```
+
+`--anotar` grava uma copia de cada imagem com a caixa de cada regiao e um rotulo
+`marca · fila · pontuacao`. **A saida e separada por fila:**
+
+```
+runs/anotadas/
+  auto_aceite/foto.jpg      so as caixas aceitas
+  revisao/foto.jpg          so as que precisam de conferencia
+  orfao/foto.jpg            so as referencias que faltam
+  ...
+```
+
+Cada copia leva **apenas as caixas daquela fila**. Quem abre `orfao/` esta
+decidindo promocao para o banco, e caixa de outra fila no meio so atrapalha. A
+mesma imagem aparece em mais de uma pasta quando tem regioes de filas diferentes
+— o que e a informacao certa: ela exige duas acoes distintas. A estrutura de
+subpastas da entrada e espelhada dentro de cada fila, entao `nike/01.jpg` e
+`itau/01.jpg` nao se sobrescrevem.
+
+A cor tambem vem da fila: verde entra sozinho, ambar e azul pedem humano, roxo e
+a referencia que falta, cinza e marca fora do portfolio, vermelho e descarte.
+
+**Um logo, uma caixa.** Recortes aninhados da mesma marca sao colapsados antes do
+relatorio — ver `NestedRegionResolver` em `.claude/doc/CONTRACTS.md`. Sem isso o
+mesmo escudo aparece tres vezes, em tres filas diferentes, e infla a fila humana
+com recortes internos de algo que ja foi aceito.
+
+Por padrao as regioes em `auto_rejeicao` ficam de fora — do json e do desenho.
+Para ver tudo que o detector achou, incluindo o descartado, acrescente `--tudo`.
 
 O json de saida traz, por regiao: a caixa, a fila, a marca, a pontuacao, os
 sinais que a produziram (similaridade, margem, inliers) e **os motivos em ordem
 de aplicacao**. Com isso, "por que esta regiao caiu nesta fila?" tem resposta sem
 reexecutar nada.
+
+### 4. Reenquadrar as referencias (opcional, mas recomendado)
+
+Referencia que inclui a placa em volta ensina a placa, nao a marca. Medido no par
+`amazon x azul` recortado da mesma foto de backdrop: com a moldura, 0.903 de
+similaridade entre **logos diferentes**; so o wordmark, 0.630.
+
+```bash
+poetry run python tools/tighten_references.py --origem referencias/ --destino referencias_cortadas/
+poetry run stratosphere banco --referencias referencias_cortadas/ --destino indice/
+```
+
+O script usa o **proprio detector da pipeline** para achar a marca dentro de cada
+referencia, entao o enquadramento da referencia fica igual ao da consulta. Quem
+nao tem caixa utilizavel e copiado como esta — perder referencia e pior que
+manter uma folgada.
+
+### 5. Calibrar os limiares com dado proprio
+
+Os defaults de `config/settings.py` sao ponto de partida, nao verdade. Com um
+conjunto rotulado por pasta (`<marca>/arquivo.jpg`), da para medir onde eles
+deveriam estar:
+
+```bash
+poetry run python tools/calibrate_thresholds.py --rotuladas rotuladas/ --banco indice/
+```
+
+Ele imprime a distribuicao de similaridade, consenso e inliers dos acertos contra
+a dos erros, e sugere `min_similarity`, `max_similarity`, `confident_inliers` e
+`orphan_max_similarity`. Tambem mede o consenso como regra sozinha — quanto dele
+e preciso para o aceite nao errar.
 
 ### Todos os comandos
 
@@ -155,9 +240,14 @@ reexecutar nada.
 | `stratosphere ambiente` | confere dependencias, GPU e banco |
 | `stratosphere banco --referencias <pasta> --destino <pasta>` | constroi o indice vetorial |
 | `stratosphere auditar [--limite N] [--minimo N]` | marcas do banco parecidas demais |
-| `stratosphere analisar --entrada <arq\|pasta> [--saida json] [--limite N] [--tudo]` | roda a pipeline |
+| `stratosphere analisar --entrada <arq\|pasta> [--saida json] [--anotar pasta] [--limite N] [--tudo]` | roda a pipeline |
+| `python tools/tighten_references.py --origem <pasta> --destino <pasta>` | reenquadra as referencias no logo |
+| `python tools/calibrate_thresholds.py --rotuladas <pasta> --banco <pasta>` | mede onde os limiares deveriam estar |
 
 Opcoes globais: `--banco <pasta>` (default `indice`), `--cpu`, `-v`.
+
+**As globais vem antes do subcomando** — `stratosphere --banco outro/ analisar ...`,
+nao `stratosphere analisar --banco outro/`. O argparse rejeita a segunda forma.
 
 ---
 
@@ -208,6 +298,9 @@ entrypoints ──> application ──> domain
 - `infrastructure/container/container.py` e o **unico** lugar que instancia
   tecnologia concreta. Trocar de detector ou de codificador e uma mudanca la, e
   em lugar nenhum mais.
+- `infrastructure/environment/env_settings.py` e o **unico** lugar que le
+  variavel de ambiente. `config/settings.py` nao le ambiente e nao guarda
+  credencial.
 
 Documentacao de projeto em `.claude/doc/`: objetivos, arquitetura, contratos,
 entidades, decisoes e o grafo de dependencias.
