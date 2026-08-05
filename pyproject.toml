@@ -1,0 +1,70 @@
+[project]
+name = "stratosphere"
+version = "0.1.0"
+description = "Deteccao de marcas em imagens: separa ONDE ha logo de QUAL logo e"
+requires-python = ">=3.11,<3.13"
+authors = [{ name = "Igor Nascimento" }]
+readme = "README.md"
+license = { text = "MIT" }
+
+dependencies = [
+    "numpy (>=1.26,<2.3)",
+    "pillow (>=10.0)",
+    "transformers (>=4.46)",
+    "accelerate (>=0.30)",
+    "safetensors (>=0.4)",
+    "opencv-contrib-python-headless (>=4.9)",
+]
+
+[project.scripts]
+stratosphere = "entrypoints.cli.main:main"
+
+[tool.poetry]
+packages = [
+    { include = "config" },
+    { include = "domain" },
+    { include = "application" },
+    { include = "infrastructure" },
+    { include = "entrypoints" },
+    { include = "shared" },
+]
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6"
+mypy = "^1.11"
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "ANN"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "domain",
+    "application",
+    "infrastructure",
+    "entrypoints",
+    "shared",
+    "config",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+warn_return_any = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v"
