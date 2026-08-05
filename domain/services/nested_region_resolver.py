@@ -25,11 +25,22 @@ mais cena que marca.
 Fica a regiao inteira de melhor pontuacao: a caixa dela e a decisao dela.
 
 --------------------------------------------------------------------------
-DUAS RESTRICOES QUE MANTEM A REGRA CONSERVADORA
+CAIXA ANINHADA COLAPSA MESMO COM MARCAS DIFERENTES
 --------------------------------------------------------------------------
-- **So agrupa marca igual.** Caixa pequena de outra marca dentro de uma maior e
-  backdrop com varios patrocinadores, nao duplicata. As duas sao legitimas.
-- **So agrupa quem afirma marca.** Regiao sem marca nao tem o que deduplicar.
+A primeira versao so agrupava marca igual, com o argumento de que caixa pequena
+de outra marca dentro de uma maior seria backdrop com varios patrocinadores. O
+dado desmentiu: num painel de coletiva, o logo da amazon produziu duas caixas
+aninhadas com contencao 1.00, uma afirmando `sadia` e outra `suvinil` — as duas
+erradas. Patrocinador ao lado de patrocinador fica **lado a lado**, nao um
+dentro do outro; aninhamento com marcas diferentes e a mesma regiao respondida
+duas vezes, e duas respostas para os mesmos pixels sao uma contradicao, nao dois
+logos.
+
+Custo assumido: logo pequeno legitimamente dentro de uma caixa maior — um simbolo
+no canto de uma placa que o detector tambem enquadrou inteira — perde uma das
+duas leituras. Fica a de maior pontuacao, que e a mais confiavel das duas.
+
+**So agrupa quem afirma marca.** Regiao sem marca nao tem o que deduplicar.
 
 Typical usage:
     resolver = NestedRegionResolver(containment=0.80)
@@ -100,15 +111,14 @@ class NestedRegionResolver:
             keeper: Par ja mantido, de pontuacao maior ou igual.
 
         Returns:
-            True quando as duas afirmam a mesma marca e uma caixa esta contida
-            na outra acima do limiar.
+            True quando as duas afirmam alguma marca e uma caixa esta contida na
+            outra acima do limiar. **A marca nao precisa ser a mesma** — ver o
+            cabecalho do modulo.
         """
         candidate_region, candidate_decision = candidate
         keeper_region, keeper_decision = keeper
 
         if candidate_decision.brand is None or keeper_decision.brand is None:
-            return False
-        if candidate_decision.brand != keeper_decision.brand:
             return False
         return (
             candidate_region.detection.box.containment_with(keeper_region.detection.box)
