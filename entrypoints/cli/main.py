@@ -30,6 +30,11 @@ from config.settings import AppConfig
 from domain.enums.queue import Queue
 from domain.exceptions.domain_exceptions import DomainError
 from infrastructure.container.container import Container, build_container
+from infrastructure.environment.env_settings import (
+    ENV_FILE,
+    apply_env_overrides,
+    load_env_file,
+)
 from shared.logging.logger import configure_logging, get_logger
 
 log = get_logger("stratosphere")
@@ -60,6 +65,9 @@ def main(arguments: list[str] | None = None) -> int:
     parser = _build_parser()
     options = parser.parse_args(arguments)
     configure_logging("DEBUG" if options.verboso else "INFO")
+
+    if load_env_file():
+        log.debug("%s carregado", ENV_FILE)
 
     try:
         return int(options.function(options))
@@ -299,10 +307,26 @@ def _container(options: argparse.Namespace) -> Container:
     Returns:
         O container pronto.
     """
-    config = AppConfig()
+    return build_container(_config(options), Path(options.banco))
+
+
+def _config(options: argparse.Namespace) -> AppConfig:
+    """Monta a configuracao efetiva desta execucao.
+
+    Precedencia, do mais fraco para o mais forte: default do dataclass, `.env`,
+    variavel ja exportada no shell, flag da CLI. A flag vem por ultimo porque e
+    a decisao mais explicita que alguem pode tomar.
+
+    Args:
+        options: Opcoes ja analisadas.
+
+    Returns:
+        A configuracao com ambiente e flags aplicados.
+    """
+    config = apply_env_overrides(AppConfig())
     if getattr(options, "cpu", False):
         config = replace(config, device="cpu", precision="float32")
-    return build_container(config, Path(options.banco))
+    return config
 
 
 def _resolve_inputs(container: Container, entry: Path, limit: int) -> list[Path]:
