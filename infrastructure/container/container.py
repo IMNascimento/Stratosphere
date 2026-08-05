@@ -19,6 +19,7 @@ from application.use_cases.audit_database import AuditDatabaseUseCase
 from application.use_cases.build_database import BuildDatabaseUseCase
 from config.settings import AppConfig
 from domain.services.confusion_groups import ConfusionGroups
+from domain.services.nested_region_resolver import NestedRegionResolver
 from domain.services.queue_router import Calibration, EvidenceWeights, QueueRouter
 from infrastructure.detection.owlv2_detector import Owlv2Detector
 from infrastructure.encoding.dinov2_encoder import Dinov2Encoder
@@ -100,6 +101,7 @@ def build_container(config: AppConfig, database_path: Path) -> Container:
         source=source,
         database=database,
         router=_build_router(config),
+        resolver=NestedRegionResolver(containment=config.routing.nested_containment),
         config=config,
     )
     return Container(

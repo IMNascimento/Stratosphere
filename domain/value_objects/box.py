@@ -94,6 +94,30 @@ class Box:
         union = self.area + other.area - intersection
         return intersection / union
 
+    def containment_with(self, other: "Box") -> float:
+        """Quanto da MENOR das duas caixas esta coberto pela outra.
+
+        Existe porque o IoU e cego para aninhamento, e aninhamento e o caso
+        comum quando um detector de vocabulario aberto olha o mesmo logo: um
+        recorte justo no simbolo e outro folgado em volta descrevem a mesma
+        coisa, mas dividem a area da uniao e ficam com IoU baixo. Medido em
+        imagem real, um recorte inteiramente dentro do outro deu IoU 0.32 —
+        longe de qualquer limiar de supressao razoavel — e contencao 1.0.
+
+        Args:
+            other: Caixa a comparar, nas mesmas coordenadas de imagem.
+
+        Returns:
+            Valor entre 0.0 e 1.0. Um significa que uma das caixas esta
+            inteiramente dentro da outra, em qualquer das duas direcoes.
+        """
+        common_width = max(0, min(self.x2, other.x2) - max(self.x1, other.x1))
+        common_height = max(0, min(self.y2, other.y2) - max(self.y1, other.y1))
+        intersection = common_width * common_height
+        if intersection == 0:
+            return 0.0
+        return intersection / min(self.area, other.area)
+
     def with_margin(self, fraction: float, max_width: int, max_height: int) -> "Box":
         """Devolve a caixa expandida proporcionalmente, presa aos limites da imagem.
 

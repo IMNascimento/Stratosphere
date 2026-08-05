@@ -173,6 +173,9 @@ class RoutingConfig:
         orphan_min_inliers: Inliers minimos para o orfao geometrico disparar.
         orphan_max_similarity: Similaridade abaixo da qual, havendo confirmacao
             geometrica, a regiao e orfa.
+        nested_containment: Fracao da menor caixa coberta pela maior a partir da
+            qual dois recortes da MESMA marca sao o mesmo logo, e so o de melhor
+            pontuacao entra no relatorio. Nao e IoU — ver `NestedRegionResolver`.
     """
 
     similarity_weight: float = 0.36
@@ -188,6 +191,7 @@ class RoutingConfig:
     reject: float = thresholds.DEFAULT_REJECT
     orphan_min_inliers: int = thresholds.DEFAULT_ORPHAN_MIN_INLIERS
     orphan_max_similarity: float = thresholds.DEFAULT_ORPHAN_MAX_SIMILARITY
+    nested_containment: float = thresholds.DEFAULT_NESTED_CONTAINMENT
 
 
 @dataclass(frozen=True)

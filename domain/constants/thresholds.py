@@ -44,3 +44,8 @@ DEFAULT_ORPHAN_MAX_SIMILARITY: float = 0.88
 # valer uma passada de detector. Permissivo de proposito — o que se descarta
 # aqui nunca mais volta, e o recall do detector e o teto do sistema.
 DEFAULT_MIN_EDGE_DENSITY: float = 0.004
+
+# Fracao da menor caixa coberta pela maior a partir da qual dois recortes sao o
+# MESMO logo, e nao dois logos vizinhos. Nao e IoU: IoU e cego para aninhamento,
+# e recorte dentro de recorte sai com IoU baixo mesmo estando 100% contido.
+DEFAULT_NESTED_CONTAINMENT: float = 0.80

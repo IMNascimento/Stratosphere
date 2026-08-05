@@ -21,7 +21,9 @@ from application.ports.i_geometric_verifier import IGeometricVerifier
 from application.ports.i_image_source import IImageSource, RgbImage
 from config.settings import AppConfig
 from domain.entities.analyzed_region import AnalyzedRegion
+from domain.entities.decision import Decision
 from domain.repositories.i_reference_database import IReferenceDatabase
+from domain.services.nested_region_resolver import NestedRegionResolver
 from domain.services.queue_router import QueueRouter
 
 
@@ -36,9 +38,10 @@ class AnalyzeImageUseCase:
         source: IImageSource,
         database: IReferenceDatabase,
         router: QueueRouter,
+        resolver: NestedRegionResolver,
         config: AppConfig,
     ) -> None:
-        """Recebe as portas e o servico de dominio ja construidos.
+        """Recebe as portas e os servicos de dominio ja construidos.
 
         Args:
             detector: Camada que encontra onde ha marca.
@@ -47,6 +50,7 @@ class AnalyzeImageUseCase:
             source: Acesso a imagem e recorte.
             database: Banco de referencia consultado pela busca vetorial.
             router: Servico de dominio que decide a fila.
+            resolver: Servico de dominio que colapsa recortes do mesmo logo.
             config: Parametros de todas as camadas.
         """
         self._detector = detector
@@ -55,6 +59,7 @@ class AnalyzeImageUseCase:
         self._source = source
         self._database = database
         self._router = router
+        self._resolver = resolver
         self._config = config
 
     def execute(self, command: AnalyzeImageCommand) -> AnalysisOutput:
@@ -83,7 +88,7 @@ class AnalyzeImageUseCase:
         crops = self._crop_all(image, detections)
         vectors = self._encoder.encode(crops)
 
-        regions: list[RegionOutput] = []
+        decided: list[tuple[AnalyzedRegion, Decision]] = []
         for index, (detection, crop) in enumerate(zip(detections, crops, strict=True)):
             candidates = self._database.search(vectors[index], self._config.search.neighbors)
 
@@ -95,8 +100,10 @@ class AnalyzeImageUseCase:
             if self._config.geometry.enabled and candidates:
                 region = region.with_verdicts(self._verifier.verify(crop, candidates))
 
-            regions.append(self._to_output(region))
+            decided.append((region, self._router.route(region)))
 
+        survivors = self._resolver.resolve(decided)
+        regions = [self._to_output(region, decision) for region, decision in survivors]
         return AnalysisOutput(path=command.path, discarded_by=None, regions=tuple(regions))
 
     def _discard(self, image: RgbImage) -> str | None:
@@ -148,16 +155,16 @@ class AnalyzeImageUseCase:
             for detection in detections
         ]
 
-    def _to_output(self, region: AnalyzedRegion) -> RegionOutput:
+    def _to_output(self, region: AnalyzedRegion, decision: Decision) -> RegionOutput:
         """Converte a regiao analisada e sua decisao no DTO de saida.
 
         Args:
             region: Regiao com candidatos e vereditos ja reunidos.
+            decision: O que o roteador decidiu para ela.
 
         Returns:
             O DTO correspondente, com os sinais que justificam a decisao.
         """
-        decision = self._router.route(region)
         verdict = region.best_verdict
         box = region.detection.box
         return RegionOutput(
