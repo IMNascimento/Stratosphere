@@ -1,79 +1,262 @@
-# [Nome do Projeto]
+# Stratosphere
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 
-## Introdução
+Deteccao de marcas em imagens, em escala, com marcas entrando continuamente no
+portfolio.
 
-[Nome do Projeto] é uma ferramenta [descreva a principal funcionalidade ou objetivo do projeto] que oferece [benefícios principais]. Desenvolvido como um projeto open source, nosso objetivo é [explicar o objetivo principal do projeto].
+A ideia central cabe numa frase:
 
-## Funcionalidades
+> **Separar *onde tem logo* de *qual logo e*.**
+> Um detector agnostico de marca acha as regioes candidatas. Uma busca vetorial
+> num banco de referencias diz de quem sao. **Marca nova e uma pasta de imagens
+> a mais, nao um ciclo de retreino.**
 
-- Funcionalidade 1
-- Funcionalidade 2
-- Funcionalidade 3
-- [Adicione outras funcionalidades importantes]
+Analogia: detector de rosto — que acha qualquer rosto, inclusive de quem nunca
+viu — somado a reconhecimento facial, que compara com um banco cadastrado.
 
-## Pré-requisitos
+---
 
-Antes de começar, certifique-se de ter as seguintes ferramentas instaladas:
+## Por que nao um classificador por marca
 
-- [Linguagem/Framework] versão X.X.X
-- [Banco de Dados]
-- [Dependências principais]
-- [Outros requisitos]
+Porque o requisito e "marca nova sem retreino", e ele descarta a abordagem
+tradicional por dois motivos que se somam:
 
-## Instalação
+| | classificador por marca | retrieval (este projeto) |
+|---|---|---|
+| custo de marca nova | um ciclo de treino | copiar imagens numa pasta |
+| custo de inferencia | cresce com o numero de marcas | constante em relacao as marcas |
+| quem sabe o que e "Nike" | o modelo | **o banco** |
 
-Siga as etapas abaixo para configurar o projeto em sua máquina local:
+O detector deste projeto **nunca** e informado de nome de marca. A entidade
+`Deteccao` nao tem campo `marca`, e essa ausencia e estrutural: e o que impede o
+acoplamento de voltar por descuido.
 
-1. Clone o repositório:
-    ```bash
-    git clone https://github.com/usuario/repo.git
-    ```
-2. Navegue até o diretório do projeto:
-    ```bash
-    cd nome-do-projeto
-    ```
-3. Crie e ative o ambiente virtual:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Para Linux/MacOS
-    .\venv\Scripts\activate  # Para Windows
-    ```
-4. Instale as dependências:
-    ```bash
-    pip install -r requirements.txt
-    ```
+---
+
+## A pipeline
+
+```
+imagem
+  │
+  ├─ 1  PRE-FILTRO ............ descarta imagem sem estrutura
+  │       Permissivo de proposito. O que se descarta aqui nunca mais volta.
+  │
+  ├─ 2  DETECTOR AGNOSTICO .... ONDE ha marca grafica
+  │       Prompts de CONCEITO ("logo", "emblem"), nunca nomes de marca.
+  │
+  ├─ 3a CODIFICADOR ........... regiao -> vetor
+  ├─ 3b BUSCA VETORIAL ........ vetor -> marcas candidatas
+  │       E aqui que a marca aparece pela primeira vez.
+  │
+  ├─ 4  VERIFICACAO GEOMETRICA  "e o mesmo desenho?"
+  │       Falha de forma diferente da camada 3 — por isso as duas convivem.
+  │
+  └─ 5  ROTEADOR .............. funde os sinais -> fila de destino
+```
+
+Cada camada e mais cara que a anterior e so ve o que a anterior deixou passar. A
+verificacao geometrica, em especial, roda apenas nos melhores candidatos de cada
+regiao — se rodasse em tudo, seria a camada dominante do custo.
+
+### As filas de saida
+
+| fila | significado | exige humano |
+|---|---|:--:|
+| `auto_aceite` | evidencia suficiente, entra no relatorio | nao |
+| `revisao` | ha um palpite e nao ha confianca | **sim** |
+| `confusao` | empate entre marcas do mesmo grupo declarado | **sim** |
+| `orfao` | ha logo e o banco nao reconheceu — **a referencia que falta** | **sim** |
+| `negativa` | logo de marca fora do portfolio. Acerto, nao rejeicao | nao |
+| `auto_rejeicao` | nao ha evidencia de marca | nao |
+
+**`orfao` e o mais valioso.** Ele nao e um erro: e o sistema dizendo *"o banco
+tem esta marca e nao tem esta variacao dela"*. Promover essas regioes de volta
+para o banco e o que faz o sistema melhorar sozinho com o uso.
+
+---
+
+## Instalacao
+
+Todo comando roda via Poetry. Chamar `python` direto nao funciona — as
+dependencias vivem no ambiente do Poetry.
+
+```bash
+poetry install
+poetry run stratosphere ambiente
+```
+
+`ambiente` confere dependencias, aceleracao e banco **antes** de qualquer
+download de peso de modelo. Rode primeiro: ele transforma meia hora de espera
+seguida de erro num diagnostico de um segundo.
+
+---
 
 ## Uso
 
-Após a instalação, você pode iniciar a aplicação com o seguinte comando:
+### 1. Montar o banco de referencia
+
+```
+referencias/
+  nike/
+    simbolo/     o simbolo isolado
+    aplicado/    em tecido, em embalagem — ja deformado
+    degradado/   pequeno, borrado, cortado
+  cimed/
+    wordmark/
+    ...
+```
+
+A **marca** e o primeiro nivel — e o rotulo que o sistema devolve. A **variante**
+e o segundo, e serve para tornar visivel no `ls` qual tipo de aplicacao esta
+sub-representado.
 
 ```bash
-python manage.py runserver
+poetry run stratosphere banco --referencias referencias/ --destino indice/
 ```
 
-Acesse o projeto em http://localhost:8000.
+### 2. Auditar antes de usar
 
-## Exemplos de Uso
-```python
-# Exemplo de código mostrando como usar a funcionalidade principal do projeto
+```bash
+poetry run stratosphere auditar --banco indice/
 ```
 
-## Contribuindo
+Lista pares de marcas **diferentes** cujas referencias se parecem demais. **Cada
+par e um falso positivo agendado**, ou um grupo de confusao ainda nao declarado.
+Resolver isso agora custa minutos; descobrir depois custa um relatorio errado na
+mao de um cliente.
 
-Contribuições são bem-vindas! Por favor, siga as diretrizes em CONTRIBUTING.md para fazer um pull request.
+Tambem avisa quais marcas tem poucas referencias — elas vao produzir orfaos em
+vez de acertos, e saber disso de antemao muda a leitura de qualquer metrica.
 
-## Licença
+### 3. Analisar
 
-Distribuído sob a licença MIT. Veja LICENSE para mais informações.
+```bash
+# uma imagem
+poetry run stratosphere analisar --entrada foto.jpg --banco indice/
 
-## Autores
+# uma pasta inteira, com o detalhe por regiao em json
+poetry run stratosphere analisar --entrada fotos/ --banco indice/ --saida resultado.json
 
-Seu Nome - Desenvolvedor Principal - Seu Perfil GitHub
+# sem GPU
+poetry run stratosphere analisar --entrada fotos/ --cpu
+```
 
-## Agradecimentos
-[Recursos ou bibliotecas que você usou]
-[Qualquer outra pessoa ou organização que você queira mencionar]
+O json de saida traz, por regiao: a caixa, a fila, a marca, a pontuacao, os
+sinais que a produziram (similaridade, margem, inliers) e **os motivos em ordem
+de aplicacao**. Com isso, "por que esta regiao caiu nesta fila?" tem resposta sem
+reexecutar nada.
+
+### Todos os comandos
+
+| comando | o que faz |
+|---|---|
+| `stratosphere ambiente` | confere dependencias, GPU e banco |
+| `stratosphere banco --referencias <pasta> --destino <pasta>` | constroi o indice vetorial |
+| `stratosphere auditar [--limite N] [--minimo N]` | marcas do banco parecidas demais |
+| `stratosphere analisar --entrada <arq\|pasta> [--saida json] [--limite N] [--tudo]` | roda a pipeline |
+
+Opcoes globais: `--banco <pasta>` (default `indice`), `--cpu`, `-v`.
+
+---
+
+## Como adicionar uma marca
+
+```bash
+mkdir -p referencias/marca_nova/aplicado
+# copie as imagens de referencia
+poetry run stratosphere banco --referencias referencias/ --destino indice/
+poetry run stratosphere auditar --banco indice/
+```
+
+Sem treino. Sem GPU alem da codificacao das imagens novas.
+
+**O que funciona melhor:** crop real da superficie onde a marca costuma
+aparecer. Logo de press kit e arte vetorial limpa; a regiao real e um recorte
+pequeno, borrado e torto de um painel filmado de longe. Os dois vetores nao
+ficam proximos. A logo oficial vale como ponto de partida para uma marca que
+acabou de entrar e ainda nao tem material real — e so isso.
+
+**O caminho natural:** rode em sombra por alguns dias, olhe a fila `orfao`, e
+promova as regioes recorrentes para o banco. E o loop que faz o sistema melhorar
+com o uso.
+
+---
+
+## Estrutura
+
+Arquitetura em camadas, com a dependencia sempre apontando para dentro.
+
+```
+config/          dataclasses de configuracao, sem logica e sem ambiente
+domain/          entidades, value objects e AS REGRAS DE DECISAO
+  services/roteador_de_fila.py    <- o nucleo. Puro, sem I/O, sem GPU
+application/     portas e casos de uso — orquestra, nao decide
+infrastructure/  os adaptadores concretos e o container
+entrypoints/cli/ a linha de comando
+```
+
+```
+entrypoints ──> application ──> domain
+      │              │
+      └──────> infrastructure ──> (domain, application)
+```
+
+- `domain/` nao importa nada alem da biblioteca padrao e `numpy`.
+- `application/` fala com as portas, **nunca** com `infrastructure/`.
+- `infrastructure/container/container.py` e o **unico** lugar que instancia
+  tecnologia concreta. Trocar de detector ou de codificador e uma mudanca la, e
+  em lugar nenhum mais.
+
+Documentacao de projeto em `.claude/doc/`: objetivos, arquitetura, contratos,
+entidades, decisoes e o grafo de dependencias.
+
+---
+
+## Configuracao
+
+Tudo em `config/settings.py`, em dataclasses.
+
+**Dois valores merecem atencao especial**, porque falham em silencio quando
+importados de outro contexto:
+
+| parametro | por que nao transfere |
+|---|---|
+| `DetectorConfig.limiar_de_confianca` | esta na escala **daquele** detector. Um valor razoavel para um modelo treinado costuma zerar o recall de um detector de vocabulario aberto, cuja distribuicao de confianca e muito mais comprimida |
+| `RoteamentoConfig.similaridade_minima` | esta na escala **daquele** codificador. Vetores de regioes nao relacionadas raramente ficam proximos de zero — mapear a partir de zero faz parede lisa parecer evidencia |
+
+Recalibre com dado proprio antes de operar. Os defaults sao ponto de partida.
+
+### Uma armadilha do scorer
+
+Os pesos de `RoteamentoConfig` somam 1. Quando a verificacao geometrica **nao
+opina** — logo chapado ou pequeno demais para casar pontos — os pesos restantes
+sao **renormalizados**. Sem isso, a regiao seria punida por uma evidencia que
+nunca teve chance de existir, e o teto da pontuacao cairia abaixo do limiar de
+aceite para uma classe inteira de casos.
+
+---
+
+## Qualidade
+
+```bash
+poetry run ruff check . --fix
+poetry run ruff format .
+poetry run mypy . --ignore-missing-imports
+```
+
+**Esta versao nao tem suite de testes**, por decisao de escopo registrada em
+`.claude/doc/DECISIONS.md`. A consequencia esta anotada la: nao ha rede de
+seguranca contra regressao.
+
+O dominio foi escrito puro e sem I/O justamente para que a suite possa ser
+acrescentada depois sem refatoracao. O ponto de partida obvio e
+`tests/unit/test_roteador_de_fila.py`, cobrindo a ordem das regras descrita em
+`.claude/doc/CONTRACTS.md` — e o arquivo de maior risco e menor custo de teste.
+
+---
+
+## Licenca
+
+MIT. Ver [LICENSE](LICENSE).
