@@ -22,19 +22,23 @@ Typical usage:
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
 
-from application.dtos.analysis import AnalyzeImageCommand, BuildDatabaseCommand
+from application.dtos.analysis import AnalyzeImageCommand, BuildDatabaseCommand, RegionOutput
 from config.settings import AppConfig
 from domain.enums.queue import Queue
 from domain.exceptions.domain_exceptions import DomainError
 from infrastructure.container.container import Container, build_container
 from infrastructure.environment.env_settings import (
     ENV_FILE,
+    HF_TOKEN_VARIABLE,
     apply_env_overrides,
+    has_hf_token,
     load_env_file,
 )
+from infrastructure.image.pillow_annotator import annotated_path
 from shared.logging.logger import configure_logging, get_logger
 
 log = get_logger("stratosphere")
@@ -113,6 +117,18 @@ def _command_environment(options: argparse.Namespace) -> int:
         except ImportError:
             print(f"  {module:<14} AUSENTE  ->  {hint}")
             all_present = False
+
+    print("\n=== hugging face ===")
+    config = _config(options)
+    print(f"  {str(ENV_FILE):<14} {'presente' if ENV_FILE.is_file() else 'ausente'}")
+    if has_hf_token():
+        print(f"  {HF_TOKEN_VARIABLE:<14} definido")
+    else:
+        print(f"  {HF_TOKEN_VARIABLE:<14} ausente — so baixa modelo de acesso livre")
+        print(f"  {'':<14} preencha em {ENV_FILE} (ver .env.example)")
+    print(f"  {'detector':<14} {config.detector.identifier}")
+    print(f"  {'codificador':<14} {config.encoder.identifier}")
+    print(f"  {'execucao':<14} {config.device} | {config.precision}")
 
     print("\n=== aceleracao ===")
     try:
@@ -244,6 +260,8 @@ def _command_analyze(options: argparse.Namespace) -> int:
         return _DOMAIN_ERROR_CODE
 
     log.info("analisando %d imagens", len(paths))
+    entry = Path(options.entrada)
+    annotated_folder = Path(options.anotar) if options.anotar else None
     total_by_queue: dict[str, int] = {}
     rows: list[dict[str, object]] = []
 
@@ -252,29 +270,17 @@ def _command_analyze(options: argparse.Namespace) -> int:
         for queue_name, quantity in output.count_by_queue().items():
             total_by_queue[queue_name] = total_by_queue.get(queue_name, 0) + quantity
 
+        visible = [
+            region
+            for region in output.regions
+            if region.queue is not Queue.AUTO_REJECT or options.tudo
+        ]
         brands = output.accepted_brands()
-        rows.append(
-            {
-                "imagem": str(path),
-                "descartada_por": output.discarded_by,
-                "marcas_aceitas": list(brands),
-                "regioes": [
-                    {
-                        "identificador": region.identifier,
-                        "caixa": list(region.box),
-                        "fila": region.queue.value,
-                        "marca": region.brand,
-                        "pontuacao": round(region.score, 4),
-                        "similaridade": round(region.similarity, 4),
-                        "margem": round(region.margin, 4),
-                        "inliers": region.inliers,
-                        "motivos": list(region.reasons),
-                    }
-                    for region in output.regions
-                    if region.queue is not Queue.AUTO_REJECT or options.tudo
-                ],
-            }
-        )
+        rows.append(_row(path, output.discarded_by, brands, visible))
+
+        if annotated_folder is not None:
+            _annotate_by_queue(container, path, entry, annotated_folder, visible)
+
         if brands:
             print(f"  {path.name[:56]:<58} {', '.join(brands)}")
         if position % 25 == 0:
@@ -292,10 +298,83 @@ def _command_analyze(options: argparse.Namespace) -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\ndetalhe por regiao: {destination}")
+    if annotated_folder is not None:
+        print(f"imagens anotadas:   {annotated_folder}")
     return 0
 
 
 # -- apoio -----------------------------------------------------------------
+
+
+def _annotate_by_queue(
+    container: Container,
+    source: Path,
+    root: Path,
+    folder: Path,
+    regions: Sequence[RegionOutput],
+) -> None:
+    """Grava uma copia anotada por fila presente na imagem.
+
+    Cada copia leva **apenas as caixas daquela fila**. Quem abre
+    `anotadas/orfao/` esta decidindo promocao para o banco, e caixa de outra
+    fila no meio so atrapalha essa decisao. A mesma imagem aparece em mais de
+    uma pasta quando tem regioes de filas diferentes — o que e a informacao
+    certa: ela exige duas acoes distintas.
+
+    Args:
+        container: Container, de onde vem o anotador.
+        source: Arquivo analisado.
+        root: Raiz da entrada, para espelhar subpastas.
+        folder: Pasta raiz das anotacoes.
+        regions: Regioes que sobreviveram ao relatorio.
+    """
+    for queue in _QUEUE_DISPLAY_ORDER:
+        selected = [region for region in regions if region.queue is queue]
+        if not selected:
+            continue
+        container.annotator.annotate(
+            source, selected, annotated_path(source, root, folder / queue.value)
+        )
+
+
+def _row(
+    path: Path,
+    discarded_by: str | None,
+    brands: tuple[str, ...],
+    regions: Sequence[RegionOutput],
+) -> dict[str, object]:
+    """Monta a linha do json de saida para uma imagem.
+
+    As chaves seguem em portugues: sao o formato ja documentado no README.
+
+    Args:
+        path: Arquivo analisado.
+        discarded_by: Motivo do descarte no pre-filtro, ou None.
+        brands: Marcas entregues sem revisao humana.
+        regions: Regioes que entram no relatorio.
+
+    Returns:
+        O dicionario pronto para serializar.
+    """
+    return {
+        "imagem": str(path),
+        "descartada_por": discarded_by,
+        "marcas_aceitas": list(brands),
+        "regioes": [
+            {
+                "identificador": region.identifier,
+                "caixa": list(region.box),
+                "fila": region.queue.value,
+                "marca": region.brand,
+                "pontuacao": round(region.score, 4),
+                "similaridade": round(region.similarity, 4),
+                "margem": round(region.margin, 4),
+                "inliers": region.inliers,
+                "motivos": list(region.reasons),
+            }
+            for region in regions
+        ],
+    }
 
 
 def _container(options: argparse.Namespace) -> Container:
@@ -382,7 +461,12 @@ def _build_parser() -> argparse.ArgumentParser:
     analyze.add_argument("--saida", default=None, help="json com o detalhe por regiao")
     analyze.add_argument("--limite", type=int, default=0, help="max de imagens (0 = todas)")
     analyze.add_argument(
-        "--tudo", action="store_true", help="inclui regioes rejeitadas no json de saida"
+        "--anotar", default=None, help="pasta onde gravar as imagens com as caixas desenhadas"
+    )
+    analyze.add_argument(
+        "--tudo",
+        action="store_true",
+        help="inclui regioes rejeitadas no json de saida e nas imagens anotadas",
     )
     analyze.set_defaults(function=_command_analyze)
 

@@ -23,6 +23,7 @@ from domain.services.queue_router import Calibration, EvidenceWeights, QueueRout
 from infrastructure.detection.owlv2_detector import Owlv2Detector
 from infrastructure.encoding.dinov2_encoder import Dinov2Encoder
 from infrastructure.geometry.sift_verifier import SiftVerifier
+from infrastructure.image.pillow_annotator import PillowAnnotator
 from infrastructure.image.pillow_image_source import PillowImageSource
 from infrastructure.index.npz_reference_database import (
     METADATA_FILE,
@@ -42,10 +43,13 @@ class Container:
         build_database: Pasta de referencias para indice vetorial.
         audit_database: Pares de marcas confundiveis. None sem banco.
         image_source: Exposto porque o entrypoint precisa listar pastas.
+        annotator: Desenho das caixas sobre a imagem, para conferencia no olho.
+            E saida de diagnostico e nao participa da pipeline.
     """
 
     build_database: BuildDatabaseUseCase
     image_source: PillowImageSource
+    annotator: PillowAnnotator
     analyze_image: AnalyzeImageUseCase | None = None
     audit_database: AuditDatabaseUseCase | None = None
 
@@ -78,7 +82,8 @@ def build_container(config: AppConfig, database_path: Path) -> Container:
     build = BuildDatabaseUseCase(
         encoder=encoder, source=source, writer=NpzDatabaseWriter(), config=config
     )
-    container = Container(build_database=build, image_source=source)
+    annotator = PillowAnnotator(source=source)
+    container = Container(build_database=build, image_source=source, annotator=annotator)
 
     if not _database_exists(database_path):
         return container
@@ -100,6 +105,7 @@ def build_container(config: AppConfig, database_path: Path) -> Container:
     return Container(
         build_database=build,
         image_source=source,
+        annotator=annotator,
         analyze_image=analyze,
         audit_database=AuditDatabaseUseCase(database=database, config=config),
     )
