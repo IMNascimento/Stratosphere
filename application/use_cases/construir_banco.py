@@ -13,6 +13,7 @@ Typical usage:
 
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Protocol
 
 import numpy as np
 from numpy.typing import NDArray
@@ -184,11 +185,13 @@ class ConstruirBancoUseCase:
         return mantidas, descartadas
 
 
-class GravadorDeBanco:
-    """Contrato minimo de persistencia do banco, satisfeito pela infraestrutura.
+class GravadorDeBanco(Protocol):
+    """Contrato de persistencia do banco, satisfeito estruturalmente.
 
-    Nao e uma ABC formal para nao criar um port so por isto: a implementacao
-    concreta e a mesma classe que le o banco, e o container injeta o objeto.
+    E um `Protocol` e nao uma ABC de proposito: a infraestrutura nao precisa
+    herdar nada para servir aqui, basta ter o metodo com a assinatura certa.
+    Herdar obrigaria `infrastructure` a importar `application` so para declarar
+    conformidade, o que inverte a direcao natural desta dependencia.
     """
 
     def gravar(
@@ -209,8 +212,5 @@ class GravadorDeBanco:
             variantes: Variante de cada linha.
             caminhos: Arquivo de origem de cada linha.
             assinatura_do_codificador: Assinatura de quem produziu os vetores.
-
-        Raises:
-            NotImplementedError: Sempre — a implementacao vive em infrastructure.
         """
-        raise NotImplementedError
+        ...

@@ -49,6 +49,14 @@ select = ["E", "F", "I", "N", "UP", "B", "SIM", "ANN"]
 #   e foram descontinuadas no proprio ruff. O padrao do projeto prevalece.
 ignore = ["E501", "ANN101", "ANN102"]
 
+[tool.ruff.lint.per-file-ignores]
+# ANN401 proibe `Any` em assinatura. Os adaptadores de infrastructure envolvem
+# SDKs sem tipagem (tensores, keypoints, handles de modelo) — tipar esses
+# objetos exigiria inventar stubs que nao correspondem a realidade da
+# biblioteca. `Any` fica confinado a esta camada de proposito: domain e
+# application seguem proibindo.
+"infrastructure/**/*.py" = ["ANN401"]
+
 [tool.ruff.lint.isort]
 known-first-party = [
     "domain",
@@ -66,6 +74,15 @@ ignore_missing_imports = true
 disallow_untyped_defs = true
 disallow_any_generics = true
 warn_return_any = true
+
+[[tool.mypy.overrides]]
+# Os adaptadores de infrastructure sao a fronteira com bibliotecas sem tipagem
+# completa (transformers, PIL, cv2). Exigir chamada tipada e retorno nao-Any
+# nessa fronteira so produziria `cast` decorativo, que esconde o problema em vez
+# de resolver. A relaxacao para AQUI: domain e application seguem em strict.
+module = ["infrastructure.*"]
+disallow_untyped_calls = false
+warn_return_any = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
