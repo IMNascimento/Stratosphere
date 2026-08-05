@@ -167,7 +167,9 @@ poetry.lock
 
 # Artefatos da pipeline
 runs/
-index/
+indice/
+indice_*/
+referencias/
 *.npz
 
 # Pesos de modelo
