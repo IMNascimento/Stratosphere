@@ -376,6 +376,9 @@ class QueueRouter:
         confirma o desenho e a similaridade esta no rabo de baixo, a regiao e a
         referencia que falta, e promove-la ao banco vale mais que aceita-la.
 
+        **Nao resgata regiao abaixo do limiar de rejeicao.** O consenso promove
+        de revisao para aceite; nao promove de descarte para aceite.
+
         Args:
             region: Regiao analisada.
             brand: Marca do melhor candidato.
@@ -386,6 +389,13 @@ class QueueRouter:
             A decisao, ou None se a regra nao se aplicar.
         """
         if brand is None:
+            return None
+        # Piso: o consenso decide entre REVISAO e ACEITE, nunca entre REJEICAO e
+        # aceite. Sem ele, uma regiao com pontuacao 0.37 — abaixo da linha em
+        # que a propria politica manda descartar sem humano — entrava direto no
+        # relatorio do cliente so porque o top-k era unanime. Consenso forte com
+        # todo o resto fraco continua sendo motivo para olhar, nao para afirmar.
+        if score < self.calibration.reject:
             return None
         agreeing = region.agreeing_candidates
         if region.brand_consensus < self.calibration.consensus_accept:
