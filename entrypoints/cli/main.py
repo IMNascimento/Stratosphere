@@ -36,6 +36,7 @@ from infrastructure.environment.env_settings import (
     HF_TOKEN_VARIABLE,
     apply_env_overrides,
     has_hf_token,
+    hub_cache_state,
     load_env_file,
 )
 from infrastructure.image.pillow_annotator import annotated_path
@@ -128,7 +129,16 @@ def _command_environment(options: argparse.Namespace) -> int:
         print(f"  {'':<14} preencha em {ENV_FILE} (ver .env.example)")
     print(f"  {'detector':<14} {config.detector.identifier}")
     print(f"  {'codificador':<14} {config.encoder.identifier}")
+    print(f"  {'juiz':<14} {config.judge.model} (so com --vlm)")
     print(f"  {'execucao':<14} {config.device} | {config.precision}")
+
+    cache, size, offline = hub_cache_state()
+    print(f"  {'cache':<14} {cache} | {size:.1f} GB ja em disco")
+    if offline:
+        print(f"  {'rede':<14} offline — nada e baixado, so o que ja esta em cache e usado")
+    else:
+        print(f"  {'rede':<14} revalida metadado a cada execucao")
+        print(f"  {'':<14} para parar com isso: HF_HUB_OFFLINE=1 no .env")
 
     print("\n=== aceleracao ===")
     try:
@@ -258,6 +268,15 @@ def _command_analyze(options: argparse.Namespace) -> int:
     if not paths:
         log.error("nenhuma imagem em %s", options.entrada)
         return _DOMAIN_ERROR_CODE
+
+    if options.vlm:
+        judge = _config(options).judge
+        log.info(
+            "juiz visual ligado: %s, ate %d regioes por imagem — modelo local, primeira "
+            "execucao baixa os pesos",
+            judge.model,
+            judge.max_regions,
+        )
 
     log.info("analisando %d imagens", len(paths))
     entry = Path(options.entrada)
@@ -405,6 +424,8 @@ def _config(options: argparse.Namespace) -> AppConfig:
     config = apply_env_overrides(AppConfig())
     if getattr(options, "cpu", False):
         config = replace(config, device="cpu", precision="float32")
+    if getattr(options, "vlm", False):
+        config = replace(config, judge=replace(config.judge, enabled=True))
     return config
 
 
@@ -439,6 +460,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--banco", default="indice", help="pasta do indice vetorial")
     parser.add_argument("--cpu", action="store_true", help="forca execucao em CPU")
+    parser.add_argument(
+        "--vlm",
+        action="store_true",
+        help="liga a segunda opiniao visual sobre o que cair em revisao (modelo local)",
+    )
     parser.add_argument("-v", "--verboso", action="store_true")
 
     subcommands = parser.add_subparsers(dest="command", required=True)

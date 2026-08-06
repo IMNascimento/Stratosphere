@@ -44,10 +44,15 @@ ENV_FILE = Path(".env")
 # chegar a `os.environ` para o download de peso restrito funcionar.
 HF_TOKEN_VARIABLE = "HF_TOKEN"
 
+# Modo offline do hub. Ligado, nenhuma requisicao sai — o que estiver em cache e
+# usado como esta, e o que faltar vira erro em vez de download.
+HF_OFFLINE_VARIABLE = "HF_HUB_OFFLINE"
+
 _DEVICE = "STRATOSPHERE_DEVICE"
 _PRECISION = "STRATOSPHERE_PRECISION"
 _DETECTOR_MODEL = "STRATOSPHERE_DETECTOR_MODEL"
 _ENCODER_MODEL = "STRATOSPHERE_ENCODER_MODEL"
+_JUDGE_MODEL = "STRATOSPHERE_JUDGE_MODEL"
 
 
 def load_env_file(path: Path = ENV_FILE) -> bool:
@@ -80,11 +85,14 @@ def apply_env_overrides(config: AppConfig) -> AppConfig:
     precision = _text(_PRECISION)
     detector_model = _text(_DETECTOR_MODEL)
     encoder_model = _text(_ENCODER_MODEL)
+    judge_model = _text(_JUDGE_MODEL)
 
     if detector_model is not None:
         config = replace(config, detector=replace(config.detector, identifier=detector_model))
     if encoder_model is not None:
         config = replace(config, encoder=replace(config.encoder, identifier=encoder_model))
+    if judge_model is not None:
+        config = replace(config, judge=replace(config.judge, model=judge_model))
     if device is not None:
         config = replace(config, device=device)
     if precision is not None:
@@ -103,6 +111,25 @@ def has_hf_token() -> bool:
         registrado em log.
     """
     return bool(os.environ.get(HF_TOKEN_VARIABLE, "").strip())
+
+
+def hub_cache_state() -> tuple[Path, float, bool]:
+    """Descreve onde os pesos ja baixados estao e se o hub sai a rede.
+
+    Peso de modelo e baixado **uma vez** e fica em disco. O que se repete a cada
+    execucao e uma revalidacao de metadado — barata, mas visivel, e impossivel
+    sem rede. Ligar o modo offline pula essa ida e usa o que ja esta la.
+
+    Returns:
+        A pasta de cache, quanto ela ocupa em GB, e se o modo offline esta
+        ligado. O tamanho e 0.0 enquanto nada foi baixado.
+    """
+    default = Path.home() / ".cache" / "huggingface"
+    folder = Path(_text("HF_HOME") or _text("HUGGINGFACE_HUB_CACHE") or default)
+    size = 0.0
+    if folder.is_dir():
+        size = sum(f.stat().st_size for f in folder.rglob("*") if f.is_file()) / 1024**3
+    return folder, size, (_text(HF_OFFLINE_VARIABLE) or "0") not in ("0", "false", "False")
 
 
 def _text(variable: str) -> str | None:
