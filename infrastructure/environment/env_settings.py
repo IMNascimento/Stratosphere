@@ -52,6 +52,8 @@ _DEVICE = "STRATOSPHERE_DEVICE"
 _PRECISION = "STRATOSPHERE_PRECISION"
 _DETECTOR_MODEL = "STRATOSPHERE_DETECTOR_MODEL"
 _ENCODER_MODEL = "STRATOSPHERE_ENCODER_MODEL"
+_ENCODER_BACKEND = "STRATOSPHERE_ENCODER_BACKEND"
+_ENCODER_AGGREGATION = "STRATOSPHERE_ENCODER_AGGREGATION"
 _JUDGE_MODEL = "STRATOSPHERE_JUDGE_MODEL"
 
 
@@ -85,12 +87,23 @@ def apply_env_overrides(config: AppConfig) -> AppConfig:
     precision = _text(_PRECISION)
     detector_model = _text(_DETECTOR_MODEL)
     encoder_model = _text(_ENCODER_MODEL)
+    encoder_backend = _text(_ENCODER_BACKEND)
+    encoder_aggregation = _text(_ENCODER_AGGREGATION)
     judge_model = _text(_JUDGE_MODEL)
 
     if detector_model is not None:
         config = replace(config, detector=replace(config.detector, identifier=detector_model))
     if encoder_model is not None:
         config = replace(config, encoder=replace(config.encoder, identifier=encoder_model))
+    # Trocar so o identificador nao basta: modelo de familia diferente precisa de
+    # outro adaptador, e o de agregacao errada produz um espaco vetorial ruim em
+    # silencio. Os tres andam juntos.
+    if encoder_backend is not None:
+        config = replace(config, encoder=replace(config.encoder, backend=encoder_backend))
+    if encoder_aggregation is not None:
+        config = replace(
+            config, encoder=replace(config.encoder, aggregation=encoder_aggregation)
+        )
     if judge_model is not None:
         config = replace(config, judge=replace(config.judge, model=judge_model))
     if device is not None:
