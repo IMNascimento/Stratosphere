@@ -146,7 +146,8 @@ de `config/settings.py` e baixa modelo de acesso livre.
 | `HF_TOKEN` | baixar peso com **acesso restrito** no Hugging Face. Gere em [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) e aceite os termos na pagina do modelo — token valido sem termos aceitos tambem recebe 403 |
 | `HF_HOME` | onde o hub guarda os pesos. Util quando o disco do usuario nao cabe varios modelos de visao |
 | `HF_HUB_OFFLINE` | `=1` para nao sair a rede. Os pesos ja ficam em disco; o que se repete a cada execucao e so uma revalidacao de metadado. `ambiente` mostra o que ja esta em cache |
-| `STRATOSPHERE_DETECTOR_MODEL` · `STRATOSPHERE_ENCODER_MODEL` | trocar o peso que os adaptadores carregam |
+| `STRATOSPHERE_DETECTOR_MODEL` | trocar o peso do detector |
+| `STRATOSPHERE_ENCODER_MODEL` · `_BACKEND` · `_AGGREGATION` | trocar o codificador. **As tres andam juntas** — modelo de outra familia precisa de outro adaptador, e a agregacao errada produz espaco vetorial ruim em silencio |
 | `STRATOSPHERE_JUDGE_MODEL` | trocar o VLM do `--vlm`. **Invalida os cortes calibrados do juiz** — refaca com `tools/calibrate_judge.py` |
 | `STRATOSPHERE_DEVICE` · `STRATOSPHERE_PRECISION` | `cuda:0`/`cpu` e `float16`/`float32` |
 
