@@ -215,8 +215,23 @@ Medido em 40 pares certos contra 40 errados:
 
 | juiz | AUC | confirma com precisao 100% | s/par | VRAM |
 |---|---|---|---|---|
-| **Qwen3.5-4B** | **0.995** | **38 de 40** | 0.82 | ~9.3 GB |
-| Qwen2-VL-2B (em uso) | 0.700 | 7 de 40 | 0.19 | ~4.4 GB |
+| **Qwen3.5-4B** (em uso) | **0.995** | **38 de 40** | 0.82 | ~9.3 GB |
+| Qwen2-VL-2B | 0.700 | 7 de 40 | 0.19 | ~4.4 GB |
+
+Na imagem de referencia, com 9 marcas e 15 marcacoes conferidas a olho:
+
+| | sem juiz | com juiz |
+|---|---|---|
+| aceites | 13 | **14** |
+| precisao | 100% | **100%** |
+| recall | 87% | **93%** |
+| fila humana | 1 | **0** |
+
+**Os dois cortes sao assimetricos de proposito.** Confirmar acima de 0.75 (o
+maior par errado medido foi 0.666); negar abaixo de 0.04 (o menor par certo foi
+0.060). Confirmar errado poe marca errada no relatorio; negar errado APAGA
+deteccao real em silencio, que e pior - e o ganho de negar e pequeno, porque a
+fila humana ja esta em 1% das regioes.
 
 O 2B responde "sim" para quase tudo - 0.842 em par certo contra 0.789 em par
 errado, quase sem separacao. O Qwen3.5 responde **0.950 no certo e 0.075 no

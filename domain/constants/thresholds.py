@@ -79,15 +79,31 @@ DEFAULT_CONSENSUS_MIN_AGREEING: int = 8
 
 
 # Probabilidade de "sim" do juiz visual a partir da qual ele CONFIRMA a marca,
-# e ate a qual ele NEGA. Entre os dois ele se abstem e a regiao vai para o
-# humano.
-# MEDIDO com `tools/calibrate_judge.py`. Os numeros parecem altos e sao: modelo
-# de instrucao concorda com quase tudo que se pergunta a ele, entao a faixa util
-# nao fica em volta de 0.5 - fica no topo. Corte ingenuo em 0.5 aprova acerto e
-# erro igualmente, verificado em medicao.
-# Trocar o modelo do juiz invalida os dois valores.
-DEFAULT_JUDGE_CONFIRM_ABOVE: float = 0.92
-DEFAULT_JUDGE_DENY_BELOW: float = 0.60
+# e ate a qual ele NEGA. Entre os dois ele se abstem e a regiao vai para o humano.
+#
+# MEDIDO no Qwen3.5-4B, 60 pares certos contra 60 errados:
+#
+#     certos   min=0.060  p25=0.834  mediana=0.936  max=0.996
+#     errados  min=0.004  p25=0.039  mediana=0.112  max=0.666
+#
+# AS DUAS MARGENS SAO ASSIMETRICAS DE PROPOSITO, porque os dois erros custam
+# coisas diferentes.
+#
+# CONFIRMAR: o maior par errado chegou a 0.666. Em 0.70 ja sao 54 de 60 certos
+# com zero erros; 0.75 mantem 100% de precisao com folga acima do teto
+# observado. Confirmar errado poe marca errada no relatorio do cliente, e 60
+# pares nao garantem que 0.666 seja o teto real.
+#
+# NEGAR: o menor par certo foi 0.060. Em 0.05 caem 19 dos 60 errados sem perder
+# nenhum certo, mas a margem fica em 0.01. Em 0.04 sobra margem de verdade.
+# Negar errado APAGA DETECCAO REAL EM SILENCIO - o pior erro do sistema - e o
+# ganho e pequeno, porque a fila humana ja esta em 1% das regioes.
+#
+# Trocar o modelo do juiz invalida os dois valores. O anterior, Qwen2-VL-2B,
+# vivia em 0.92/0.60: ele respondia "sim" para quase tudo e a faixa util ficava
+# no topo. O Qwen3.5 discrimina, e a faixa util se abriu.
+DEFAULT_JUDGE_CONFIRM_ABOVE: float = 0.75
+DEFAULT_JUDGE_DENY_BELOW: float = 0.04
 
 
 # Inliers a partir dos quais a geometria aceita a regiao sozinha, sem passar
