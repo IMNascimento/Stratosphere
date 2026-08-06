@@ -115,6 +115,13 @@ class Calibration:
             confirmacao geometrica, a regiao e orfa.
         consensus_accept: Consenso a partir do qual a regiao e aceita sem
             humano, independentemente da pontuacao.
+        informative_inliers: Abaixo disto a contagem de inliers e ruido, e o
+            veredito conta como silencio — peso redistribuido — em vez de
+            evidencia fraca. **Depende do matcher.**
+        geometry_accept_inliers: Inliers a partir dos quais a geometria
+            aceita sozinha. Medido com rotulo limpo, e nao derivado da
+            pontuacao. **Depende do matcher** — trocar o verificador
+            invalida este valor.
         consensus_min_agreeing: Concordantes absolutos exigidos junto com o
             consenso, para que unanimidade de marca pouco coberta nao valha o
             mesmo que unanimidade de marca bem coberta.
@@ -130,6 +137,8 @@ class Calibration:
     orphan_max_similarity: float
     consensus_accept: float
     consensus_min_agreeing: int
+    geometry_accept_inliers: float
+    informative_inliers: int
 
     def __post_init__(self) -> None:
         """Valida a coerencia entre os limiares.
@@ -220,6 +229,10 @@ class QueueRouter:
         if confusion is not None:
             return confusion
 
+        judged = self._route_by_judge(region, brand, score, contributions)
+        if judged is not None:
+            return judged
+
         orphan = self._route_geometric_orphan(region, score, contributions)
         if orphan is not None:
             return orphan
@@ -227,6 +240,10 @@ class QueueRouter:
         consensus = self._route_by_consensus(region, brand, score, contributions)
         if consensus is not None:
             return consensus
+
+        geometry = self._route_by_geometry(region, brand, score, contributions)
+        if geometry is not None:
+            return geometry
 
         return self._route_by_threshold(region, brand, score, contributions)
 
@@ -317,6 +334,79 @@ class QueueRouter:
             contributions=contributions,
         )
 
+    def _route_by_judge(
+        self,
+        region: AnalyzedRegion,
+        brand: str | None,
+        score: float,
+        contributions: dict[str, float],
+    ) -> Decision | None:
+        """Decide quando um juiz visual olhou a regiao e opinou.
+
+        O juiz so e consultado sobre o que ja tinha caido em revisao, entao a
+        alternativa a este veredito nunca e "aceite" — e "uma pessoa vai olhar".
+        Por isso ele decide: quem olhou as duas imagens sabe mais que a
+        pontuacao ponderada, que so viu vetores.
+
+        Tres saidas. A terceira — juiz discorda e **sabe nomear outra marca** —
+        mantem a regiao na fila humana com a sugestao anexada ao motivo, para
+        quem revisa nao comecar do zero. A regra existe para qualquer juiz; o
+        adaptador local nao a dispara, porque modelo pequeno nao conhece marca
+        regional e nomear so produziria alucinacao. Ver `IJudge`.
+
+        Vem depois das regras de politica — negativa e confusao sao decisao de
+        negocio e nao se terceiriza — e antes do orfao geometrico, porque um
+        juiz que nega a marca desmonta a premissa do orfao.
+
+        Args:
+            region: Regiao analisada.
+            brand: Marca do melhor candidato.
+            score: Pontuacao ja calculada.
+            contributions: Contribuicao de cada termo.
+
+        Returns:
+            A decisao, ou None quando nenhum juiz opinou sobre esta regiao.
+        """
+        verdict = region.judgement
+        if verdict is None:
+            return None
+
+        if verdict.agrees:
+            return Decision(
+                queue=Queue.AUTO_ACCEPT,
+                brand=verdict.brand,
+                score=score,
+                reasons=(
+                    f"o juiz visual confirmou {verdict.brand!r} comparando a regiao com a "
+                    f"referencia do banco (confianca {verdict.confidence:.2f}): {verdict.reason}",
+                ),
+                contributions=contributions,
+            )
+
+        if verdict.proposes_other_brand:
+            return Decision(
+                queue=Queue.REVIEW,
+                brand=brand,
+                score=score,
+                reasons=(
+                    f"o banco propos {brand!r}, mas o juiz visual reconheceu "
+                    f"{verdict.brand!r} (confianca {verdict.confidence:.2f}): {verdict.reason}",
+                    "conferencia humana com a sugestao do juiz em maos.",
+                ),
+                contributions=contributions,
+            )
+
+        return Decision(
+            queue=Queue.AUTO_REJECT,
+            brand=None,
+            score=score,
+            reasons=(
+                f"o juiz visual negou {brand!r} comparando a regiao com a referencia "
+                f"(confianca {verdict.confidence:.2f}): {verdict.reason}",
+            ),
+            contributions=contributions,
+        )
+
     def _route_geometric_orphan(
         self,
         region: AnalyzedRegion,
@@ -397,6 +487,17 @@ class QueueRouter:
         # todo o resto fraco continua sendo motivo para olhar, nao para afirmar.
         if score < self.calibration.reject:
             return None
+        # Consenso sem similaridade nao vale: "muitas referencias concordam" so
+        # significa alguma coisa se ALGUMA delas estiver perto. Abaixo do piso de
+        # similaridade nao ha evidencia nenhuma para o consenso somar.
+        #
+        # CASO MEDIDO: a bandeira do Brasil era aceita como 'cbf' com pontuacao
+        # 0.44. O escudo da CBF contem um circulo azul com estrelas sobre verde e
+        # amarelo, e a marca tem 65 referencias no banco — mais que qualquer
+        # outra —, entao quase todo vizinho do top-25 era cbf e o consenso
+        # chegava a 1.00 em cima de similaridade 0.75.
+        if region.top_similarity < self.calibration.min_similarity:
+            return None
         agreeing = region.agreeing_candidates
         if region.brand_consensus < self.calibration.consensus_accept:
             return None
@@ -411,6 +512,67 @@ class QueueRouter:
                 f"(consenso {region.brand_consensus:.2f}). Referencias independentes "
                 "concordando valem mais que a geometria, que fica muda em logo chapado.",
                 f"pontuacao={score:.3f} — aceite por consenso, nao por limiar",
+            ),
+            contributions=contributions,
+        )
+
+    def _route_by_geometry(
+        self,
+        region: AnalyzedRegion,
+        brand: str | None,
+        score: float,
+        contributions: dict[str, float],
+    ) -> Decision | None:
+        """Aceita quando a geometria da evidencia que par errado nao alcanca.
+
+        Regra simetrica a do consenso, para o caso oposto. O consenso resgata
+        logo chapado, que rende poucos pontos e muita concordancia; esta resgata
+        logo com desenho rico, que rende muitos pontos e pouca concordancia —
+        tipicamente marca com poucas referencias no banco, onde o consenso e
+        baixo por aritmetica e nao por duvida.
+
+        **O limiar vem de medicao com rotulo limpo**, e nao da pontuacao: em 60
+        pares de marcas diferentes, o maximo observado foi 52 inliers, contra
+        mediana 86 nos pares da mesma marca. Acima de
+        `geometry_accept_inliers` nenhum par errado chegou.
+
+        Sem esta regra, regiao com 127 inliers e similaridade 0.946 ia para
+        conferencia humana por 0.05 de pontuacao — pagando o preco de uma
+        calibracao feita quando a geometria era muda em metade dos casos.
+
+        **Nao resgata regiao abaixo do limiar de rejeicao**, pelo mesmo motivo
+        que o consenso nao resgata: promover de descarte para aceite e outra
+        decisao, e ninguem olhou.
+
+        Args:
+            region: Regiao analisada.
+            brand: Marca do melhor candidato.
+            score: Pontuacao ja calculada.
+            contributions: Contribuicao de cada termo.
+
+        Returns:
+            A decisao, ou None se a regra nao se aplicar.
+        """
+        if brand is None or score < self.calibration.reject:
+            return None
+        verdict = region.confirmed_verdict
+        # A geometria precisa confirmar **a marca do topo**. Veredito forte de
+        # outra marca nao e motivo para aceitar esta — e motivo para duvidar
+        # das duas, que e o que a fila de revisao ja faz.
+        if verdict is None or verdict.brand != brand:
+            return None
+        if verdict.inliers < self.calibration.geometry_accept_inliers:
+            return None
+        return Decision(
+            queue=Queue.AUTO_ACCEPT,
+            brand=brand,
+            score=score,
+            reasons=(
+                f"geometria confirmou {brand!r} com {verdict.inliers} inliers de "
+                f"{verdict.matches} correspondencias — acima de "
+                f"{self.calibration.geometry_accept_inliers:.0f}, patamar que nenhum par de "
+                "marcas diferentes alcancou na medicao.",
+                f"pontuacao={score:.3f} — aceite por geometria, nao por limiar",
             ),
             contributions=contributions,
         )
@@ -520,7 +682,23 @@ class QueueRouter:
         }
 
         verdict = region.best_verdict
-        if verdict is not None:
+        # Contagem dentro da faixa de ruido conta como SILENCIO, e nao como
+        # evidencia fraca. Nao e a mesma coisa: evidencia fraca puxa a nota para
+        # baixo, silencio redistribui o peso.
+        #
+        # Medido: par de marcas diferentes tem mediana de 8 inliers e chega a
+        # 52; par da mesma marca tem mediana 86. Uma contagem de 12 e mais
+        # provavel de vir de par errado que de par certo — chamar isso de "13%
+        # da evidencia possivel" inventa um sinal que os numeros nao sustentam.
+        #
+        # O caso real que forcou esta regra: um swoosh com consenso 0.92 e 23
+        # das 25 respostas do banco em 'nike' caiu de aceite para descarte
+        # porque 12 inliers derrubaram a nota de 0.42 para 0.377, cruzando o
+        # piso de rejeicao por 23 milesimos. Com o SIFT a mesma regiao era
+        # aceita — nao por acerto, mas porque o SIFT ficava mudo ali e o
+        # silencio a protegia.
+        informative = verdict is not None and verdict.inliers >= calibration.informative_inliers
+        if verdict is not None and informative:
             normalized[_TERM_GEOMETRY] = _clamp_to_unit(
                 verdict.inliers / calibration.confident_inliers
             )
@@ -528,8 +706,42 @@ class QueueRouter:
         else:
             weights = self._renormalize(weights)
 
+        # Trava final: a geometria so pode SOMAR. Ela e um dispositivo de
+        # confirmacao — a pergunta dela e "e o mesmo desenho?", e "nao confirmei"
+        # significa "nao sei", nunca "nao e". Uma contagem baixa nao e prova
+        # contra: e ausencia de prova a favor, e quem carrega a prova contra sao
+        # a similaridade, o consenso e a margem.
+        #
+        # MEDIDO em 20 imagens de rede social: sem esta trava, trocar SIFT por
+        # LightGlue DERRUBAVA o resultado — 10 aceites contra 18, e 4 marcas
+        # contra 6. O motivo e contraintuitivo e vale registrar: o SIFT fica
+        # mudo em metade dos pares certos, e o silencio dele redistribuia o peso
+        # e SUBIA a nota. O LightGlue opina em quase tudo, entao uma regiao com
+        # 25 inliers passou a receber 0.28 de geometria onde antes recebia
+        # redistribuicao — e caiu abaixo do limiar por ter ganhado um sinal.
+        muted = self._renormalize(
+            {term: weight for term, weight in weights.items() if term != _TERM_GEOMETRY}
+        )
+        if _TERM_GEOMETRY in weights and self._total(muted, normalized) > self._total(
+            weights, normalized
+        ):
+            weights = muted
+
         contributions = {term: round(weights[term] * normalized[term], 4) for term in weights}
         return _clamp_to_unit(sum(contributions.values())), contributions
+
+    @staticmethod
+    def _total(weights: dict[str, float], normalized: dict[str, float]) -> float:
+        """Soma ponderada dos termos presentes nos pesos.
+
+        Args:
+            weights: Peso de cada termo considerado.
+            normalized: Valor normalizado de cada termo.
+
+        Returns:
+            A pontuacao que esses pesos produziriam.
+        """
+        return sum(weight * normalized[term] for term, weight in weights.items())
 
     @staticmethod
     def _renormalize(weights: dict[str, float]) -> dict[str, float]:

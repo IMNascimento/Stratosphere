@@ -18,6 +18,7 @@ from dataclasses import dataclass, field, replace
 from domain.entities.detection import Detection
 from domain.value_objects.candidate import Candidate
 from domain.value_objects.geometric_verdict import GeometricVerdict
+from domain.value_objects.judge_verdict import JudgeVerdict
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,8 @@ class AnalyzedRegion:
         verdicts: Resultados da verificacao geometrica. Pode ser vazio: nem
             toda regiao tem pontos suficientes, e ausencia de veredito e
             diferente de veredito negativo.
+        judgement: Parecer do juiz visual, quando houve consulta. None
+            significa que ninguem olhou — nao que o juiz discordou.
         brand_references: Quantas referencias a marca do topo tem no banco.
             Serve de teto para o consenso — sem isso, marca com 5 referencias
             jamais alcancaria o mesmo consenso de uma com 40, e a cobertura do
@@ -43,6 +46,7 @@ class AnalyzedRegion:
     detection: Detection
     candidates: tuple[Candidate, ...] = field(default_factory=tuple)
     verdicts: tuple[GeometricVerdict, ...] = field(default_factory=tuple)
+    judgement: JudgeVerdict | None = None
     brand_references: int = 0
 
     def with_candidates(self, candidates: Sequence[Candidate]) -> "AnalyzedRegion":
@@ -67,6 +71,17 @@ class AnalyzedRegion:
             Nova instancia — a entidade e imutavel.
         """
         return replace(self, verdicts=tuple(verdicts))
+
+    def with_judgement(self, judgement: JudgeVerdict) -> "AnalyzedRegion":
+        """Devolve uma copia com o parecer do juiz visual anexado.
+
+        Args:
+            judgement: O que o juiz concluiu sobre esta regiao.
+
+        Returns:
+            Nova instancia — a entidade e imutavel.
+        """
+        return replace(self, judgement=judgement)
 
     def with_brand_references(self, quantity: int) -> "AnalyzedRegion":
         """Devolve uma copia sabendo quantas referencias a marca do topo tem.
