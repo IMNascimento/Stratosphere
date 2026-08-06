@@ -166,6 +166,41 @@ class QwenJudge(IJudge):
                 found.append(ids[0])
         return found
 
+    def _chat_prompt(self, conversation: list[dict[str, Any]]) -> str:
+        """Monta o prompt garantindo que a proxima palavra seja a RESPOSTA.
+
+        Modelo com modo de raciocinio abre um bloco de pensamento sozinho: o
+        template termina em `<think>` e o proximo token e o comeco do raciocinio,
+        nao a resposta. Ler logit ali compara `Yes` contra `No` num ponto em que
+        o modelo ia escrever "The images show...".
+
+        MEDIDO no Qwen3.5-4B: sem desligar o pensamento, o token mais provavel e
+        `The` com 100.0% e o AUC cai para 0.664 — que nao mede nada. No
+        Qwen2-VL-2B, que nao tem o modo, o topo e `Yes` com 91.9%.
+
+        Args:
+            conversation: Mensagem no formato do template do modelo.
+
+        Returns:
+            O prompt pronto para a passada.
+        """
+        try:
+            prompt = self._processor.apply_chat_template(
+                conversation, tokenize=False, add_generation_prompt=True, enable_thinking=False
+            )
+        except TypeError:
+            # Template sem modo de raciocinio nao aceita o parametro.
+            prompt = self._processor.apply_chat_template(
+                conversation, tokenize=False, add_generation_prompt=True
+            )
+        # Rede de seguranca: alguns templates abrem o bloco mesmo com o parametro
+        # desligado, e outros ja o abrem E fecham. Contar os dois lados evita
+        # tanto deixar aberto quanto fechar duas vezes.
+        text = str(prompt)
+        if text.count("<think>") > text.count("</think>"):
+            text += "</think>\n\n"
+        return text
+
     def _probability_of_yes(self, crop: RgbImage, reference: RgbImage, brand: str) -> float:
         """Calcula a probabilidade de o modelo responder "sim".
 
@@ -189,9 +224,7 @@ class QwenJudge(IJudge):
                 ],
             }
         ]
-        prompt = self._processor.apply_chat_template(
-            conversation, tokenize=False, add_generation_prompt=True
-        )
+        prompt = self._chat_prompt(conversation)
         inputs = self._processor(
             text=[prompt], images=[crop, reference], return_tensors="pt", padding=True
         )
