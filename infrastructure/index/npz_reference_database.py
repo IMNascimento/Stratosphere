@@ -166,9 +166,7 @@ class NpzReferenceDatabase(IReferenceDatabase):
     # -- persistencia ------------------------------------------------------
 
     @classmethod
-    def load(
-        cls, source: Path, expected_signature: str | None = None
-    ) -> "NpzReferenceDatabase":
+    def load(cls, source: Path, expected_signature: str | None = None) -> "NpzReferenceDatabase":
         """Carrega um banco gravado e valida a compatibilidade do codificador.
 
         Args:
