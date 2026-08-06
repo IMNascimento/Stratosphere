@@ -111,11 +111,13 @@ para decidir.
 
 | codificador | melhor AUC | agregacao | licenca | ms/img |
 |---|---|---|---|---|
-| **siglip2-so400m-patch16-256** | **0.898** | `centro` | apache-2.0 | 13 |
+| **siglip2-giant-opt-patch16-256** | **0.920** | `centro` | apache-2.0 | 30 |
+| siglip2-so400m-patch16-256 | 0.898 | `centro` | apache-2.0 | 13 |
 | siglip2-large-patch16-256 | 0.883 | `centro` | apache-2.0 | 10 |
 | metaclip-2-worldwide-giant | 0.882 | `media` | **cc-by-nc** | 48 |
 | **siglip2-base-patch16-224** (em uso) | 0.801 | `pooler` | apache-2.0 | - |
 | dinov3-vitl16 | 0.769 | `centro` | **other**, restrito | - |
+| CLIP-ViT-H-14 (laion) | 0.778 | `pooler` | mit | 18 |
 | clip-vit-large-patch14 | 0.713 | `pooler` | apache-2.0 | - |
 | dinov3-vitb16 | 0.694 | `centro` | **other**, restrito | - |
 | onevision-encoder-large | 0.557 | `centro` | apache-2.0 | 61 |
@@ -150,9 +152,23 @@ aplica - a ordem muda:
 |---|---|---|---|---|
 | **em uso** | siglip2-base | **pooler** | **0.862** | **0.959** |
 | | siglip2-so400m | pooler | 0.856 | 0.938 |
+| | siglip2-giant-opt | pooler | 0.843 | 0.947 |
+| | siglip2-giant-opt | centro | 0.840 | 0.923 |
 | | siglip2-so400m | centro | 0.839 | 0.902 |
 | | siglip2-large | centro | 0.802 | 0.907 |
 | | siglip2-base | centro | 0.763 | 0.892 |
+
+Lado a lado, a inversao fica evidente:
+
+| | imagem crua | banco construido |
+|---|---|---|
+| giant-opt `centro` | **0.920** | 0.843 |
+| so400m `centro` | 0.898 | 0.839 |
+| large `centro` | 0.883 | 0.802 |
+| **base `pooler`** | 0.801 | **0.862** |
+
+**O `base` e o unico que SOBE.** Os grandes, medidos em imagem crua, prometem o
+que nao entregam no quadro que a pipeline realmente produz.
 
 **O `pooler` ganha do `centro` em todos os modelos, e o `base` empata com o
 `so400m` sendo 3x menor** - o oposto do que a medicao em imagem crua indicava.
