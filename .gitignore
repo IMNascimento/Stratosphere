@@ -165,15 +165,22 @@ cython_debug/
 .venv/
 poetry.lock
 
-# Artefatos da pipeline
+# Artefatos da pipeline — TUDO AQUI E GERADO, e nada disso sobe.
+#
+# O indice e derivado das referencias, e as referencias sao dado do cliente:
+# fotos de logo em contexto real. Versionar qualquer um dos dois coloca material
+# de terceiro no historico do repositorio, de onde nao sai facil.
+#
+# Os padroes sao amplos de proposito. Este projeto acumulou cinco indices e tres
+# arvores de referencia em uma unica sessao de experimentacao — `indice_v2`,
+# `indice_cortado`, `indice_siglip`, `referencias_v3` — e regra nomeada uma a uma
+# deixa a proxima variante passar em silencio.
 runs/
-indice/
-indice_*/
-referencias/
+indice*/
+referencias*/
 *.npz
 
 # Pesos de modelo
 *.pt
 *.ckpt
 *.safetensors
-referencias_v3/
