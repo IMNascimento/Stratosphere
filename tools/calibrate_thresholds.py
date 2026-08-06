@@ -36,18 +36,19 @@ Typical usage:
 import argparse
 import sys
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np  # noqa: E402
 
+from application.ports.i_geometric_verifier import IGeometricVerifier  # noqa: E402
 from config.settings import AppConfig  # noqa: E402
 from domain.entities.analyzed_region import AnalyzedRegion  # noqa: E402
+from infrastructure.container.container import _build_verifier  # noqa: E402
 from infrastructure.detection.owlv2_detector import Owlv2Detector  # noqa: E402
 from infrastructure.encoding.dinov2_encoder import Dinov2Encoder  # noqa: E402
-from infrastructure.geometry.sift_verifier import SiftVerifier  # noqa: E402
 from infrastructure.image.pillow_image_source import (  # noqa: E402
     ACCEPTED_EXTENSIONS,
     PillowImageSource,
@@ -125,7 +126,9 @@ def main(arguments: list[str] | None = None) -> int:
     source = PillowImageSource(min_side_to_upscale=config.encoder.min_side_to_upscale)
     encoder = Dinov2Encoder(config.encoder, options.dispositivo, options.precisao)
     detector = Owlv2Detector(config.detector, options.dispositivo, options.precisao)
-    verifier = SiftVerifier(config.geometry)
+    # Mede o verificador que a pipeline realmente usa: a escala de inliers
+    # muda com o matcher, e calibrar contra outro produziria limiar errado.
+    verifier = _build_verifier(replace(config, device=options.dispositivo))
     database = NpzReferenceDatabase.load(Path(options.banco), encoder.signature())
     references_by_brand = database.references_by_brand()
 
@@ -160,7 +163,7 @@ def _measure(  # noqa: PLR0913 - e um script de medicao, os componentes vem todo
     source: PillowImageSource,
     encoder: Dinov2Encoder,
     detector: Owlv2Detector,
-    verifier: SiftVerifier,
+    verifier: IGeometricVerifier,
     database: NpzReferenceDatabase,
     references_by_brand: dict[str, int],
     collected: Collected,
