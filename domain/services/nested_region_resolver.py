@@ -63,23 +63,43 @@ class NestedRegionResolver:
 
     Attributes:
         containment: Fracao da menor caixa coberta pela maior a partir da qual
-            as duas descrevem o mesmo logo.
+            duas caixas de marcas DIFERENTES descrevem o mesmo logo.
+        same_brand_containment: O mesmo, para duas caixas da MESMA marca. Mais
+            permissivo de proposito — ver `__init__`.
     """
 
-    def __init__(self, containment: float) -> None:
-        """Inicializa a politica com o limiar de contencao.
+    def __init__(self, containment: float, same_brand_containment: float | None = None) -> None:
+        """Inicializa a politica com os limiares de contencao.
 
         Args:
-            containment: Entre 0 e 1. Exigir 1.0 seria rigido demais — nem todo
-                aninhamento e perfeito, e o recorte folgado costuma ultrapassar
-                a borda do justo em alguns pixels.
+            containment: Entre 0 e 1, para caixas de marcas diferentes. Exigir
+                1.0 seria rigido demais — nem todo aninhamento e perfeito, e o
+                recorte folgado costuma ultrapassar a borda do justo em alguns
+                pixels.
+            same_brand_containment: Entre 0 e 1, para caixas da mesma marca.
+                None usa o mesmo valor do outro.
+
+                **Mais permissivo, e por assimetria real de risco.** Colapsar
+                duas caixas da mesma marca custa, no pior caso, uma ocorrencia a
+                menos de uma marca que a imagem ja reporta. Colapsar duas de
+                marcas diferentes apaga uma marca inteira do relatorio.
+
+                O caso que forcou a distincao: o escudo da CBF gerava duas
+                caixas, o escudo inteiro e a parte de cima dele, com contencao
+                0.76. As duas passavam pelo limiar de 0.80 e as duas eram
+                desenhadas — caixa dentro de caixa, exatamente o que este
+                servico existe para impedir.
 
         Raises:
-            ValueError: Se o limiar estiver fora de (0, 1].
+            ValueError: Se algum limiar estiver fora de (0, 1].
         """
         if not 0.0 < containment <= 1.0:
             raise ValueError(f"containment deve estar em (0, 1]: {containment}")
+        same = containment if same_brand_containment is None else same_brand_containment
+        if not 0.0 < same <= 1.0:
+            raise ValueError(f"same_brand_containment deve estar em (0, 1]: {same}")
         self.containment = containment
+        self.same_brand_containment = same
 
     def resolve(self, decided: Sequence[DecidedRegion]) -> tuple[DecidedRegion, ...]:
         """Devolve apenas uma regiao por logo detectado.
@@ -113,14 +133,19 @@ class NestedRegionResolver:
         Returns:
             True quando as duas afirmam alguma marca e uma caixa esta contida na
             outra acima do limiar. **A marca nao precisa ser a mesma** — ver o
-            cabecalho do modulo.
+            cabecalho do modulo —, mas mesma marca usa um limiar mais folgado.
         """
         candidate_region, candidate_decision = candidate
         keeper_region, keeper_decision = keeper
 
         if candidate_decision.brand is None or keeper_decision.brand is None:
             return False
+        limit = (
+            self.same_brand_containment
+            if candidate_decision.brand == keeper_decision.brand
+            else self.containment
+        )
         return (
             candidate_region.detection.box.containment_with(keeper_region.detection.box)
-            >= self.containment
+            >= limit
         )
