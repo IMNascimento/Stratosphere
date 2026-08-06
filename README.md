@@ -47,11 +47,16 @@ imagem
   │       Prompts de CONCEITO ("logo", "emblem"), nunca nomes de marca.
   │
   ├─ 3a CODIFICADOR ........... regiao -> vetor
+  │       Modelo com supervisao de TEXTO. Ver "Por que nao um encoder
+  │       auto-supervisionado" abaixo — a escolha errada aqui custou
+  │       27 pontos de recall.
   ├─ 3b BUSCA VETORIAL ........ vetor -> marcas candidatas
   │       E aqui que a marca aparece pela primeira vez.
   │
   ├─ 4  VERIFICACAO GEOMETRICA  "e o mesmo desenho?"
   │       Falha de forma diferente da camada 3 — por isso as duas convivem.
+  │       So roda no que a camada 3 NAO resolveu: 0.7s por imagem
+  │       contra 3.0s verificando tudo.
   │
   └─ 5  ROTEADOR .............. funde os sinais -> fila de destino
 ```
@@ -74,6 +79,44 @@ regiao — se rodasse em tudo, seria a camada dominante do custo.
 **`orfao` e o mais valioso.** Ele nao e um erro: e o sistema dizendo *"o banco
 tem esta marca e nao tem esta variacao dela"*. Promover essas regioes de volta
 para o banco e o que faz o sistema melhorar sozinho com o uso.
+
+---
+
+## Por que nao um encoder auto-supervisionado
+
+O teste esta embutido nos dados: varias referencias vem da MESMA foto de
+backdrop, recortadas em marcas diferentes. Da para montar dois conjuntos sem
+rotular nada:
+
+| conjunto | esperado |
+|---|---|
+| **positivo** — mesma marca, fotos de origem diferentes | proximos |
+| **negativo** — MESMA foto de origem, marcas diferentes | distantes |
+
+| codificador | AUC | positivo | negativo |
+|---|---|---|---|
+| dinov2-base `media` | 0.397 | 0.668 | 0.743 |
+| dinov2-base `centro` | **0.515** | 0.671 | **0.676** |
+| clip-vit-large | 0.713 | 0.763 | 0.669 |
+| **siglip2-base** | **0.812** | 0.868 | 0.728 |
+
+**0.515 e moeda.** O DINOv2 nao distinguia "mesma marca" de "mesma foto": dois
+logos DIFERENTES do mesmo painel pontuavam mais alto que duas fotos da MESMA
+marca. Ele e auto-supervisionado — aprendeu que o que faz duas imagens parecidas
+e a **superficie**: o painel, a luz, a moldura. SigLIP2 foi treinado casando
+imagem com legenda, e legenda fala de marca.
+
+Isso explicava sozinho `amazon x azul` em 0.903, `itau` lido como `sadia`, os
+238 pares confundiveis do banco (hoje 32) e o consenso desabando em backdrop.
+
+**Trocar o codificador invalida o indice E todos os limiares de similaridade.**
+A assinatura do codificador entra no indice e a carga recusa a combinacao errada
+— isso protege. Os limiares nao tem essa protecao: `min_similarity`,
+`max_similarity`, `redundancy_similarity`, `alert_similarity`,
+`entry_similarity` e `orphan_max_similarity` vivem todos na escala do
+codificador e falham em **silencio**, produzindo resultado plausivel e errado.
+O de deduplicacao passou despercebido e cortou o banco de 753 para 524
+referencias antes de alguem notar.
 
 ---
 
@@ -102,7 +145,9 @@ de `config/settings.py` e baixa modelo de acesso livre.
 |---|---|
 | `HF_TOKEN` | baixar peso com **acesso restrito** no Hugging Face. Gere em [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) e aceite os termos na pagina do modelo — token valido sem termos aceitos tambem recebe 403 |
 | `HF_HOME` | onde o hub guarda os pesos. Util quando o disco do usuario nao cabe varios modelos de visao |
+| `HF_HUB_OFFLINE` | `=1` para nao sair a rede. Os pesos ja ficam em disco; o que se repete a cada execucao e so uma revalidacao de metadado. `ambiente` mostra o que ja esta em cache |
 | `STRATOSPHERE_DETECTOR_MODEL` · `STRATOSPHERE_ENCODER_MODEL` | trocar o peso que os adaptadores carregam |
+| `STRATOSPHERE_JUDGE_MODEL` | trocar o VLM do `--vlm`. **Invalida os cortes calibrados do juiz** — refaca com `tools/calibrate_judge.py` |
 | `STRATOSPHERE_DEVICE` · `STRATOSPHERE_PRECISION` | `cuda:0`/`cpu` e `float16`/`float32` |
 
 Precedencia: **default do codigo < `.env` < variavel exportada no shell < flag da
@@ -189,7 +234,7 @@ subpastas da entrada e espelhada dentro de cada fila, entao `nike/01.jpg` e
 A cor tambem vem da fila: verde entra sozinho, ambar e azul pedem humano, roxo e
 a referencia que falta, cinza e marca fora do portfolio, vermelho e descarte.
 
-**Um logo, uma caixa.** Recortes aninhados da mesma marca sao colapsados antes do
+**Um logo, uma caixa.** Recortes aninhados sao colapsados antes do
 relatorio — ver `NestedRegionResolver` em `.claude/doc/CONTRACTS.md`. Sem isso o
 mesmo escudo aparece tres vezes, em tres filas diferentes, e infla a fila humana
 com recortes internos de algo que ja foi aceito.
@@ -197,12 +242,58 @@ com recortes internos de algo que ja foi aceito.
 Por padrao as regioes em `auto_rejeicao` ficam de fora — do json e do desenho.
 Para ver tudo que o detector achou, incluindo o descartado, acrescente `--tudo`.
 
+### 4. Segunda opiniao visual (opcional)
+
+```bash
+poetry run stratosphere --vlm analisar --entrada fotos/ --anotar runs/anotadas/
+```
+
+`--vlm` liga um juiz visual sobre **apenas as regioes que cairam em revisao**.
+Ele recebe duas imagens — o recorte e a referencia do banco — e responde se sao a
+mesma marca. Tres saidas:
+
+| veredito | destino |
+|---|---|
+| confirma | `auto_aceite` |
+| nega | `auto_rejeicao` |
+| se abstem, ou juiz indisponivel | `revisao`, exatamente onde ja estava |
+
+O modelo e **aberto e roda local** (`Qwen/Qwen2-VL-2B-Instruct`, apache-2.0,
+~4.4 GB), na mesma GPU do resto da pipeline. Nao ha API, nao ha custo por
+chamada, e nenhum recorte de imagem sai da maquina. A primeira execucao baixa os
+pesos; depois disso o cache resolve.
+
+**A pergunta e de comparacao, nunca "que marca e essa?".** Metade deste
+portfolio e marca regional que nenhum modelo conhece de treino; perguntar o nome
+funciona onde o sistema ja acerta e inventa resposta onde ele precisa de ajuda.
+Comparar duas imagens vale igual para marca famosa e desconhecida — e mantem o
+banco como quem diz qual marca e.
+
+**O juiz nao le a propria resposta em texto.** A pergunta e montada para que a
+proxima palavra so possa ser `Yes` ou `No`, e o que se usa e a probabilidade que
+o modelo deu a cada uma. Modelo de 2B nao segue formato de saida com
+confiabilidade, e a confianca que ele declara sobre si mesmo nao vale nada — a
+probabilidade vale, e sai numa passada so, sem laco de geracao.
+
+**Os dois cortes de decisao sao medidos, nao arbitrados.** Perguntado "sao a
+mesma marca?", o modelo concorda com quase tudo: medido, acerto e erro caem os
+dois na casa dos 0.6. O que tem sinal e a ordem, entao os cortes vem de
+percentil das duas distribuicoes:
+
+```bash
+poetry run python tools/calibrate_judge.py --rotuladas dataset/por_marca --banco indice
+```
+
+Trocar o modelo do juiz invalida os dois cortes — cada modelo tem seu vies.
+
+Juiz indisponivel ou em duvida **nao decide**: a regiao fica na fila humana.
+
 O json de saida traz, por regiao: a caixa, a fila, a marca, a pontuacao, os
 sinais que a produziram (similaridade, margem, inliers) e **os motivos em ordem
 de aplicacao**. Com isso, "por que esta regiao caiu nesta fila?" tem resposta sem
 reexecutar nada.
 
-### 4. Reenquadrar as referencias (opcional, mas recomendado)
+### 5. Reenquadrar as referencias (opcional, mas recomendado)
 
 Referencia que inclui a placa em volta ensina a placa, nao a marca. Medido no par
 `amazon x azul` recortado da mesma foto de backdrop: com a moldura, 0.903 de
@@ -218,7 +309,7 @@ referencia, entao o enquadramento da referencia fica igual ao da consulta. Quem
 nao tem caixa utilizavel e copiado como esta — perder referencia e pior que
 manter uma folgada.
 
-### 5. Calibrar os limiares com dado proprio
+### 6. Calibrar os limiares com dado proprio
 
 Os defaults de `config/settings.py` sao ponto de partida, nao verdade. Com um
 conjunto rotulado por pasta (`<marca>/arquivo.jpg`), da para medir onde eles
@@ -241,10 +332,12 @@ e preciso para o aceite nao errar.
 | `stratosphere banco --referencias <pasta> --destino <pasta>` | constroi o indice vetorial |
 | `stratosphere auditar [--limite N] [--minimo N]` | marcas do banco parecidas demais |
 | `stratosphere analisar --entrada <arq\|pasta> [--saida json] [--anotar pasta] [--limite N] [--tudo]` | roda a pipeline |
+| `stratosphere --vlm analisar ...` | idem, com segunda opiniao visual na fila de revisao |
 | `python tools/tighten_references.py --origem <pasta> --destino <pasta>` | reenquadra as referencias no logo |
 | `python tools/calibrate_thresholds.py --rotuladas <pasta> --banco <pasta>` | mede onde os limiares deveriam estar |
+| `python tools/calibrate_judge.py --rotuladas <pasta> --banco <pasta> [--limite N]` | mede o juiz visual e sugere os dois cortes dele |
 
-Opcoes globais: `--banco <pasta>` (default `indice`), `--cpu`, `-v`.
+Opcoes globais: `--banco <pasta>` (default `indice`), `--cpu`, `--vlm`, `-v`.
 
 **As globais vem antes do subcomando** — `stratosphere --banco outro/ analisar ...`,
 nao `stratosphere analisar --banco outro/`. O argparse rejeita a segunda forma.
