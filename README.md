@@ -507,3 +507,130 @@ acrescentada depois sem refatoracao. O ponto de partida obvio e
 ## Licenca
 
 MIT. Ver [LICENSE](LICENSE).
+
+---
+
+## Como fazer um bom banco de referencia
+
+Tudo aqui saiu de medicao neste projeto, e cada item cita o caso que o produziu.
+O banco e a peca que mais determina o resultado — mais que o detector, mais que
+os limiares. **Marca que o banco cobre mal nao e recuperavel por regra nenhuma.**
+
+### 1. Cobertura de variante vale mais que quantidade
+
+O que decide nao e quantas referencias a marca tem, e sim se ela tem a
+**aplicacao** que aparece na foto. Medido numa coletiva de imprensa, com a marca
+correta em primeiro lugar na busca em todos os casos:
+
+| marca | refs de backdrop | resultado |
+|---|---|---|
+| volkswagen | 11 | aceita 3x |
+| ifood | 11 | aceita 2x |
+| amazon | 9 | aceita |
+| sadia | 3 | revisao |
+| **nike** | **2** | **rejeitada** — e a nike tinha 35 referencias no total |
+| **vivo** | **1** | **rejeitada** — de 38 no total |
+
+A nike tinha 27 referencias de uniforme. Um swoosh gigante num painel procurava
+vizinho entre elas e nao achava nenhuma parecida: o consenso desabava para 2 de
+25 e a regiao morria. **Nao era duvida sobre a marca; era aritmetica do banco.**
+
+Na pratica: para cada marca, tenha referencia de **backdrop, uniforme, digital e
+o logo oficial**. Quatro boas de tipos diferentes valem mais que trinta do mesmo
+tipo.
+
+### 2. Enquadre no logo, nao na placa
+
+Medido no par `amazon x azul` recortado da MESMA foto de backdrop:
+
+```
+recorte com placa, moldura e fundo ... 0.903   <- duas marcas DIFERENTES
+tirando o fundo e a moldura .......... 0.801
+so o wordmark ........................ 0.630
+```
+
+Mas ha um piso: cortando a 40% a similaridade **sobe** de novo para 0.699 — o
+corte comeu letras, e fragmento mutilado volta a parecer com outro fragmento
+mutilado. Por isso o `prepare_reference` usa a caixa do detector com folga
+pequena, e nao uma fracao fixa.
+
+### 3. Uma marca por referencia
+
+Backdrop tem varios patrocinadores lado a lado. Referencia que pega dois logos
+ensina os dois juntos, e a busca passa a casar "painel com dois logos" em vez de
+qualquer um deles.
+
+### 4. PNG com transparencia precisa ser composto, nao achatado
+
+Alpha descartado vira **retangulo preto**. Quatro referencias do banco original
+eram exatamente isso, e uma delas colocava `cimed x nike` a **0.951** — o pior
+par do banco inteiro, entre duas marcas sem nenhuma semelhanca. O
+`prepare_reference` e o carregamento da pipeline ja compoem sobre o fundo neutro.
+
+### 5. Nao infle com quase-copias
+
+Referencia redundante nao acrescenta cobertura, ocupa o topo da busca com copia e
+**desloca vizinho util do top-k** — que e justamente o que alimenta o consenso.
+`prepare_reference` recusa acima de `SearchConfig.redundancy_similarity`.
+
+### 6. Desconfie de marca com muitas referencias
+
+A `cbf` tem 65 referencias, mais que qualquer outra. Resultado: quase todo top-25
+era cbf, e a **bandeira do Brasil** era aceita como cbf com pontuacao 0.44 — o
+escudo tem um circulo azul com estrelas sobre verde e amarelo. Marca
+super-representada domina a vizinhanca e vaza para onde nao deve.
+
+### 7. Audite depois de cada mudanca
+
+```bash
+poetry run stratosphere auditar
+```
+
+Cada par de marcas diferentes acima do limiar de alerta e um falso positivo
+agendado. Referencia nova que cria par assim custa mais do que entrega.
+
+### 8. Promova o que a operacao encontrar
+
+A fila `orfao` e o sistema dizendo *"tenho esta marca e nao tenho esta variacao
+dela"*. Promover essas regioes e o que faz o banco melhorar com o uso — a `cbf`
+ja tem 23 referencias vindas dai.
+
+```bash
+poetry run python tools/mine_references.py --entrada fotos/ --destino runs/candidatas     --marcas nike,vivo --excluir imagem_de_avaliacao.jpg
+```
+
+**Nunca garimpe da imagem que voce usa para medir.** Promover a partir dela
+fabrica metrica: o sistema passa a reconhecer um recorte de si mesmo. Por isso o
+`--excluir` existe e o log registra o que foi excluido.
+
+E confira uma a uma. Medido: das 20 candidatas com similaridade acima de 0.82, so
+**11 eram a marca certa** — `itau` lido como `sadia`, `Bolsonaro` lido como
+`vivo`, `Caze` lido como `uber`.
+
+### Preparando uma imagem para o banco
+
+```bash
+poetry run python tools/prepare_reference.py     --entrada logo_recortado.png --marca nike --variante backdrop
+```
+
+A ferramenta compoe a transparencia, reenquadra no logo com o detector, amplia o
+que for pequeno, e **so entao** compara com o banco. Ela responde quatro
+perguntas antes de gravar:
+
+| verdicto | significado |
+|---|---|
+| `REDUNDANTE` | quase igual a uma que ja esta la |
+| `PERIGOSA` | parecida demais com OUTRA marca |
+| `ROTULO SUSPEITO` | o banco prefere outra marca a que voce declarou |
+| `pequena demais` | menos de 48px de menor lado |
+
+Ela **nao** escreve no banco. Grava a copia preparada em
+`<destino>/<marca>/<variante>/`, e reconstruir o indice continua sendo uma
+decisao sua:
+
+```bash
+poetry run python tools/prepare_reference.py --entrada logos/ --marca vivo --so-relatorio
+poetry run stratosphere banco --referencias referencias_v3 --destino indice
+poetry run stratosphere auditar
+```
+
