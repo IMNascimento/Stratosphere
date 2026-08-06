@@ -184,3 +184,14 @@ referencias*/
 *.pt
 *.ckpt
 *.safetensors
+
+# Configuracao e documentacao internas do assistente — NAO sobem.
+# Ficam na maquina de quem desenvolve. O repositorio carrega codigo; regra de
+# trabalho, padroes, changelog e registro de decisao sao contexto de quem opera,
+# e mudam por motivo diferente do codigo.
+#
+# Os arquivos continuam em disco: `git rm --cached` tira do rastreamento, nao da
+# pasta. Quem clonar nao recebe — precisa da propria copia.
+.claude/
+CLAUDE.md
+
