@@ -328,19 +328,80 @@ e preciso para o aceite nao errar.
 
 | comando | o que faz |
 |---|---|
-| `stratosphere ambiente` | confere dependencias, GPU e banco |
+| `stratosphere ambiente` | confere dependencias, GPU, cache do hub e banco |
 | `stratosphere banco --referencias <pasta> --destino <pasta>` | constroi o indice vetorial |
 | `stratosphere auditar [--limite N] [--minimo N]` | marcas do banco parecidas demais |
 | `stratosphere analisar --entrada <arq\|pasta> [--saida json] [--anotar pasta] [--limite N] [--tudo]` | roda a pipeline |
 | `stratosphere --vlm analisar ...` | idem, com segunda opiniao visual na fila de revisao |
 | `python tools/tighten_references.py --origem <pasta> --destino <pasta>` | reenquadra as referencias no logo |
+| `python tools/mine_references.py --entrada <pasta> --destino <pasta> [--marcas a,b] [--excluir arq...]` | garimpa candidatas a novas referencias |
+| `python tools/dump_signals.py --rotuladas <pasta> --saida sinais.jsonl` | grava os sinais crus, para iterar sem GPU |
+| `python tools/sweep_routing.py --sinais sinais.jsonl [--varredura]` | explora limiares em cima do dump |
 | `python tools/calibrate_thresholds.py --rotuladas <pasta> --banco <pasta>` | mede onde os limiares deveriam estar |
 | `python tools/calibrate_judge.py --rotuladas <pasta> --banco <pasta> [--limite N]` | mede o juiz visual e sugere os dois cortes dele |
 
-Opcoes globais: `--banco <pasta>` (default `indice`), `--cpu`, `--vlm`, `-v`.
+**Opcoes globais vem ANTES do subcomando:**
 
-**As globais vem antes do subcomando** — `stratosphere --banco outro/ analisar ...`,
-nao `stratosphere analisar --banco outro/`. O argparse rejeita a segunda forma.
+| flag | efeito |
+|---|---|
+| `--banco <pasta>` | qual indice usar. Default `indice` |
+| `--cpu` | forca CPU. Vence `STRATOSPHERE_DEVICE` |
+| `--vlm` | liga o juiz visual sobre a fila de revisao |
+| `-v` | log em DEBUG, incluindo o trafego de rede |
+
+```bash
+poetry run stratosphere --banco outro/ analisar --entrada fotos/   # certo
+poetry run stratosphere analisar --banco outro/ --entrada fotos/   # argparse recusa
+```
+
+### Rodar uma pasta inteira
+
+```bash
+poetry run stratosphere analisar   --entrada /caminho/das/fotos   --saida runs/resultado.json   --anotar runs/anotadas
+```
+
+Percorre a pasta **recursivamente**, em ordem estavel. A estrutura de subpastas da
+entrada e espelhada dentro de cada fila da saida, entao `nike/01.jpg` e
+`itau/01.jpg` nao se sobrescrevem.
+
+```
+runs/anotadas/
+  auto_aceite/...    so as caixas aceitas
+  revisao/...        so as que precisam de conferencia
+  orfao/...          so as referencias que faltam
+```
+
+**Cada copia leva apenas as caixas daquela fila.** Quem abre `orfao/` esta
+decidindo promocao para o banco, e caixa de outra fila no meio so atrapalha. A
+mesma imagem aparece em mais de uma pasta quando tem regioes de filas diferentes
+— o que e a informacao certa: ela exige duas acoes distintas.
+
+Variacoes uteis:
+
+```bash
+# so as N primeiras, para calibrar antes de rodar tudo
+poetry run stratosphere analisar --entrada fotos/ --limite 40 --anotar runs/amostra
+
+# incluindo o que foi descartado, para investigar o que o detector achou
+poetry run stratosphere analisar --entrada fotos/ --tudo --saida runs/tudo.json
+
+# sem GPU
+poetry run stratosphere --cpu analisar --entrada fotos/
+
+# com o juiz visual sobre a fila de revisao
+poetry run stratosphere --vlm analisar --entrada fotos/ --anotar runs/com_juiz
+```
+
+**Custo:** ~0,7 s por imagem numa GPU de 12 GB, com a geometria rodando so onde
+pode mudar o destino (`GeometryConfig.only_when_uncertain`). Verificando tudo sao
+3,0 s pelo mesmo resultado. O `--vlm` acrescenta uma passada de VLM por regiao em
+revisao, com teto em `JudgeConfig.max_regions`.
+
+**O json de saida** traz, por regiao: a caixa, a fila, a marca, a pontuacao, os
+sinais que a produziram (similaridade, margem, inliers) e **os motivos em ordem
+de aplicacao**. Com isso, "por que esta regiao caiu nesta fila?" tem resposta sem
+reexecutar nada. Regioes em `auto_rejeicao` ficam de fora por padrao — use
+`--tudo` para incluir.
 
 ---
 
