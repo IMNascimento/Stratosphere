@@ -109,7 +109,7 @@ class EncoderConfig:
 
     identifier: str = "google/siglip2-base-patch16-224"
     backend: str = "siglip"
-    aggregation: str = "centro"
+    aggregation: str = "pooler"
     batch_size: int = 32
     crop_margin: float = 0.12
     crop_side: int = 224

@@ -103,6 +103,12 @@ AUC mede a ORDEM, nao o valor absoluto. 0.5 e moeda.
 
 Medido em 588 referencias, 1107 pares positivos, 270 negativos:
 
+**ATENCAO: a tabela abaixo foi medida alimentando o modelo com a imagem de
+referencia CRUA, e a pipeline alimenta com o recorte quadrado com letterbox.**
+Preprocessamento diferente muda o resultado - ver "O que a medicao em banco
+construido mostrou" logo depois. Use esta tabela para escolher CANDIDATOS, nunca
+para decidir.
+
 | codificador | melhor AUC | agregacao | licenca | ms/img |
 |---|---|---|---|---|
 | **siglip2-so400m-patch16-256** | **0.898** | `centro` | apache-2.0 | 13 |
@@ -133,6 +139,32 @@ Tres coisas que a tabela ensina alem do vencedor:
 - **O `onevision-encoder` colapsa.** Todos os pares dao 0.999 - positivo,
   negativo, tanto faz. E encoder para alimentar LLM, e a saida agregada nunca foi
   treinada para ter geometria de cosseno.
+
+### O que a medicao em banco construido mostrou
+
+A tabela acima mede a imagem de referencia crua. Medindo os vetores **como ficam
+no indice** - ou seja, depois do recorte quadrado com letterbox que a pipeline
+aplica - a ordem muda:
+
+| banco | modelo | agregacao | AUC mesma-foto | AUC controle |
+|---|---|---|---|---|
+| **em uso** | siglip2-base | **pooler** | **0.862** | **0.959** |
+| | siglip2-so400m | pooler | 0.856 | 0.938 |
+| | siglip2-so400m | centro | 0.839 | 0.902 |
+| | siglip2-large | centro | 0.802 | 0.907 |
+| | siglip2-base | centro | 0.763 | 0.892 |
+
+**O `pooler` ganha do `centro` em todos os modelos, e o `base` empata com o
+`so400m` sendo 3x menor** - o oposto do que a medicao em imagem crua indicava.
+
+A causa e o letterbox. O recorte quadrado acrescenta barras de area morta ao
+quadro, e o `centro`, que corta o quarto central, funciona bem em imagem cheia e
+mal em imagem que ja tem borda vazia por construcao. A cabeca de pooling lida com
+isso; a media do quarto central nao.
+
+**A licao vale alem deste caso: so conta a medicao feita na populacao em que o
+sistema roda.** Foi o mesmo erro que quase fez o SIFT parecer melhor que o
+LightGlue.
 
 **Trocar o codificador invalida o indice E todos os limiares de similaridade.**
 A assinatura protege o indice - a carga recusa a combinacao errada. Os limiares
