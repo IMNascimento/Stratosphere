@@ -29,15 +29,15 @@ class AnalyzedRegion:
         identifier: Chave estavel da regiao, unica dentro de uma execucao.
         detection: O que o detector agnostico produziu.
         candidates: Respostas do banco, **ordenadas por similaridade
-            decrescente**. A ordem e contrato — as propriedades derivadas
+            decrescente**. A ordem e contrato - as propriedades derivadas
             dependem dela.
         verdicts: Resultados da verificacao geometrica. Pode ser vazio: nem
             toda regiao tem pontos suficientes, e ausencia de veredito e
             diferente de veredito negativo.
         judgement: Parecer do juiz visual, quando houve consulta. None
-            significa que ninguem olhou — nao que o juiz discordou.
+            significa que ninguem olhou - nao que o juiz discordou.
         brand_references: Quantas referencias a marca do topo tem no banco.
-            Serve de teto para o consenso — sem isso, marca com 5 referencias
+            Serve de teto para o consenso - sem isso, marca com 5 referencias
             jamais alcancaria o mesmo consenso de uma com 40, e a cobertura do
             banco viraria criterio de decisao sem ninguem ter escolhido isso.
     """
@@ -57,7 +57,7 @@ class AnalyzedRegion:
                 decrescente.
 
         Returns:
-            Nova instancia — a entidade e imutavel.
+            Nova instancia - a entidade e imutavel.
         """
         return replace(self, candidates=tuple(candidates))
 
@@ -68,7 +68,7 @@ class AnalyzedRegion:
             verdicts: Resultados da verificacao geometrica. Pode ser vazio.
 
         Returns:
-            Nova instancia — a entidade e imutavel.
+            Nova instancia - a entidade e imutavel.
         """
         return replace(self, verdicts=tuple(verdicts))
 
@@ -79,7 +79,7 @@ class AnalyzedRegion:
             judgement: O que o juiz concluiu sobre esta regiao.
 
         Returns:
-            Nova instancia — a entidade e imutavel.
+            Nova instancia - a entidade e imutavel.
         """
         return replace(self, judgement=judgement)
 
@@ -91,7 +91,7 @@ class AnalyzedRegion:
                 o consenso cai para a fracao simples sobre o top-k.
 
         Returns:
-            Nova instancia — a entidade e imutavel.
+            Nova instancia - a entidade e imutavel.
         """
         return replace(self, brand_references=max(0, quantity))
 
@@ -121,7 +121,7 @@ class AnalyzedRegion:
         acaso**, e faz isso melhor que a similaridade absoluta. Medido em imagem
         real: um swoosh de verdade teve similaridade 0.712 com 21 de 25
         vizinhos da mesma marca; um texto sem marca nenhuma teve similaridade
-        **maior**, 0.837, com apenas 3 de 25 — e os demais espalhados entre
+        **maior**, 0.837, com apenas 3 de 25 - e os demais espalhados entre
         quatro marcas sem relacao. Pela similaridade sozinha, o ruido ganha do
         logo; pelo consenso, nao.
 
@@ -161,14 +161,14 @@ class AnalyzedRegion:
         segundo vizinho e quase sempre outra foto da mesma marca; usar a
         similaridade dele faria a margem colapsar para perto de zero em todos os
         casos, o termo de margem morreria, e o peso dele viraria teto morto no
-        score — o maximo alcancavel cairia abaixo do limiar de aceite. **O
+        score - o maximo alcancavel cairia abaixo do limiar de aceite. **O
         defeito piora conforme o banco cresce**, ou seja, exatamente na direcao
         em que o sistema deve evoluir.
 
         Returns:
             Similaridade da rival mais proxima, ou 0.0 quando o top-k inteiro e
             de uma marca so. Nesse caso nao ha rival a vista e a margem e
-            maxima — mas isso depende de o top-k ser grande o bastante para uma
+            maxima - mas isso depende de o top-k ser grande o bastante para uma
             segunda marca aparecer.
         """
         top = self.top_brand
@@ -202,7 +202,7 @@ class AnalyzedRegion:
 
         Returns:
             O veredito mais forte disponivel. None significa que a camada nao
-            opinou — o que e diferente de ter opinado contra.
+            opinou - o que e diferente de ter opinado contra.
         """
         if not self.verdicts:
             return None

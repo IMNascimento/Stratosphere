@@ -165,15 +165,15 @@ cython_debug/
 .venv/
 poetry.lock
 
-# Artefatos da pipeline — TUDO AQUI E GERADO, e nada disso sobe.
+# Artefatos da pipeline - TUDO AQUI E GERADO, e nada disso sobe.
 #
 # O indice e derivado das referencias, e as referencias sao dado do cliente:
 # fotos de logo em contexto real. Versionar qualquer um dos dois coloca material
 # de terceiro no historico do repositorio, de onde nao sai facil.
 #
 # Os padroes sao amplos de proposito. Este projeto acumulou cinco indices e tres
-# arvores de referencia em uma unica sessao de experimentacao — `indice_v2`,
-# `indice_cortado`, `indice_siglip`, `referencias_v3` — e regra nomeada uma a uma
+# arvores de referencia em uma unica sessao de experimentacao - `indice_v2`,
+# `indice_cortado`, `indice_siglip`, `referencias_v3` - e regra nomeada uma a uma
 # deixa a proxima variante passar em silencio.
 runs/
 indice*/
@@ -185,13 +185,13 @@ referencias*/
 *.ckpt
 *.safetensors
 
-# Configuracao e documentacao internas do assistente — NAO sobem.
+# Configuracao e documentacao internas do assistente - NAO sobem.
 # Ficam na maquina de quem desenvolve. O repositorio carrega codigo; regra de
 # trabalho, padroes, changelog e registro de decisao sao contexto de quem opera,
 # e mudam por motivo diferente do codigo.
 #
 # Os arquivos continuam em disco: `git rm --cached` tira do rastreamento, nao da
-# pasta. Quem clonar nao recebe — precisa da propria copia.
+# pasta. Quem clonar nao recebe - precisa da propria copia.
 .claude/
 CLAUDE.md
 

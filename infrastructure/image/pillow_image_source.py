@@ -8,7 +8,7 @@ Esticar um wordmark largo para caber num quadrado destroi exatamente a
 caracteristica que o distingue de outro wordmark.
 
 **Ampliar recorte minusculo.** Um recorte de 15x10 pixels esticado para 224 vira
-borrao — mas um borrao *consistente*, e o banco tem referencias degradadas
+borrao - mas um borrao *consistente*, e o banco tem referencias degradadas
 justamente para casar com ele. Deixar em 15x10 e pior: o modelo recebe ruido de
 interpolacao.
 
@@ -73,12 +73,12 @@ class PillowImageSource(IImageSource):
         """Achata transparencia sobre fundo neutro antes de virar RGB.
 
         `convert("RGB")` puro **descarta** o canal alfa e mantem o RGB que
-        estiver embaixo — que em arte vetorial exportada costuma ser preto. Uma
+        estiver embaixo - que em arte vetorial exportada costuma ser preto. Uma
         logo escura sobre fundo transparente vira, entao, um retangulo preto
         solido. Medido no banco real: quatro referencias `oficial/*.png` tinham
         brilho medio 0.0, eram vetores praticamente identicos entre si, e a
         melhor correspondencia da logo oficial da nike era uma referencia de
-        cimed a 0.951 — com zero nike no top-25.
+        cimed a 0.951 - com zero nike no top-25.
 
         O fundo e o mesmo cinza do letterbox de proposito. Medido na mesma
         referencia: composta sobre este cinza ela puxa 19 de 25 vizinhos nike;
@@ -141,7 +141,7 @@ class PillowImageSource(IImageSource):
     def edge_density(self, image: RgbImage, max_side: int = 256) -> float:
         """Mede a fracao de pixels com gradiente forte.
 
-        Usa diferencas centrais numa versao reduzida da imagem — roda em
+        Usa diferencas centrais numa versao reduzida da imagem - roda em
         microssegundos e nao exige biblioteca de visao.
 
         Args:

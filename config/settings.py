@@ -1,4 +1,4 @@
-"""Configuracao da aplicacao — apenas dataclasses com defaults, sem logica.
+"""Configuracao da aplicacao - apenas dataclasses com defaults, sem logica.
 
 Este modulo nao le variavel de ambiente e nao contem credencial. Leitura de
 ambiente e responsabilidade do container de infraestrutura.
@@ -12,7 +12,7 @@ importados de outro contexto:
   detector de vocabulario aberto, cuja distribuicao de confianca e muito mais
   comprimida.
 - `RoutingConfig.min_similarity` esta na escala do codificador. Vetores de
-  crops nao relacionados raramente ficam proximos de zero — mapear a partir de
+  crops nao relacionados raramente ficam proximos de zero - mapear a partir de
   zero faz parede lisa parecer evidencia.
 
 Recalibre com dado proprio antes de operar.
@@ -48,8 +48,8 @@ class DetectorConfig:
         identifier: Modelo a carregar.
         confidence_threshold: Confianca minima para a regiao seguir adiante.
             **Baixo de proposito.** O detector so precisa acertar onde; a busca
-            vetorial filtra quem. Limiar alto troca recall — que e
-            irrecuperavel, porque a regiao nunca chega ao codificador — por
+            vetorial filtra quem. Limiar alto troca recall - que e
+            irrecuperavel, porque a regiao nunca chega ao codificador - por
             precisao, que e recuperavel adiante.
         max_regions: Teto de regioes por imagem, apos ordenar por confianca.
         min_relative_area: Fracao minima da area da imagem. Um simbolo em
@@ -84,7 +84,7 @@ class EncoderConfig:
     Attributes:
         identifier: Modelo a carregar.
         aggregation: Como reduzir os tokens do modelo a um vetor. `centro` usa
-            apenas o quarto central dos patches — o detector ja centra a caixa
+            apenas o quarto central dos patches - o detector ja centra a caixa
             no logo, entao a borda do recorte e contexto por construcao, e
             inclui-la faz o vetor descrever o fundo em vez da marca.
         batch_size: Quantas regioes por passada.
@@ -96,14 +96,14 @@ class EncoderConfig:
             modelo; `dinov2` agrega retalhos conforme `aggregation`.
 
     **O default e `siglip` por medicao, nao por preferencia.** Com o proprio
-    banco como conjunto de teste — pares da mesma marca em fotos diferentes
-    contra pares de marcas diferentes na MESMA foto — o DINOv2 separa com AUC
+    banco como conjunto de teste - pares da mesma marca em fotos diferentes
+    contra pares de marcas diferentes na MESMA foto - o DINOv2 separa com AUC
     0.515 (moeda) e o SigLIP2 com 0.812. O DINOv2 estava codificando a
     superficie, nao a marca. Ver `infrastructure/encoding/siglip_encoder.py`.
 
     Trocar `identifier` ou `backend` **invalida o indice e todos os limiares de
     similaridade**. A assinatura do codificador entra no indice e a carga
-    recusa a combinacao errada, entao o erro aparece — mas os limiares de
+    recusa a combinacao errada, entao o erro aparece - mas os limiares de
     `RoutingConfig` nao tem essa protecao e precisam ser refeitos a mao.
     """
 
@@ -126,7 +126,7 @@ class SearchConfig:
             referencias por marca, um valor pequeno devolve so a propria marca e
             a margem calculada a partir disso perde o sentido.
         redundancy_similarity: Referencias da MESMA marca acima disto sao
-            redundantes — nao acrescentam cobertura e ocupam o topo da busca com
+            redundantes - nao acrescentam cobertura e ocupam o topo da busca com
             copias.
         alert_similarity: Referencias de marcas DIFERENTES acima disto sao
             reportadas na auditoria. Cada par e um falso positivo agendado.
@@ -134,7 +134,7 @@ class SearchConfig:
     **Os dois limiares vivem na escala do codificador e nao sao portateis.**
     Medido: no DINOv2, pares da mesma marca em fotos diferentes tinham mediana
     0.671; no SigLIP2, 0.840 com p90 em 0.919. Manter 0.95 apos a troca fez a
-    deduplicacao comer referencia legitima — `amazon` caiu de 26 para 3 — porque
+    deduplicacao comer referencia legitima - `amazon` caiu de 26 para 3 - porque
     o que era "quase copia" numa escala e "mesma marca, outra foto" na outra.
     """
 
@@ -153,16 +153,16 @@ class GeometryConfig:
             verificado, e tambem o portao que decide onde a geometria roda
             quando `only_when_uncertain` esta ligado. **Vive na escala do
             codificador**: 0.45 valia para o DINOv2 e, na escala do SigLIP2,
-            deixava passar ate parede lisa — o portao existia e nao filtrava
+            deixava passar ate parede lisa - o portao existia e nao filtrava
             nada. Permissiva dentro da escala certa, e nao fora dela. A busca vetorial e fraca
-            exatamente onde o casamento de pontos e forte — mudanca de ponto de
+            exatamente onde o casamento de pontos e forte - mudanca de ponto de
             vista. Um portao alto so deixa passar o que ja estava decidido, e a
             verificacao vira enfeite.
         max_references: Quantas marcas verificar por regiao. Uma referencia por
             marca: o objetivo e decidir ENTRE marcas.
         min_inliers: Pontos coerentes para confirmar.
         lowe_ratio: Corte do teste de razao entre os dois melhores pares. So o
-            `SiftVerifier` usa — o LightGlue casa por atencao, vendo os dois
+            `SiftVerifier` usa - o LightGlue casa por atencao, vendo os dois
             conjuntos de pontos juntos, e nao precisa desse desempate.
         reprojection_error: Tolerancia do ajuste robusto, em pixels.
         max_points: Teto de pontos extraidos por imagem.
@@ -170,7 +170,7 @@ class GeometryConfig:
             `sift` e a implementacao anterior, mantida para comparacao.
         only_when_uncertain: Se a verificacao roda **apenas** nas regioes que a
             pontuacao nao resolveu. E a ordem que a arquitetura sempre prometeu
-            — camada cara so ve o que a barata deixou passar — e que a
+            - camada cara so ve o que a barata deixou passar - e que a
             implementacao anterior nao cumpria: a geometria rodava nas ~55
             regioes de cada imagem, 4 referencias cada, inclusive nas ja
             decididas. Regiao rejeitada com similaridade acima de
@@ -204,7 +204,7 @@ class RoutingConfig:
     """Pesos e limiares da decisao final.
 
     Os pesos devem somar 1. O peso de geometria e redistribuido automaticamente
-    quando a verificacao nao opina — ver `QueueRouter`.
+    quando a verificacao nao opina - ver `QueueRouter`.
 
     Attributes:
         similarity_weight: Contribuicao da semelhanca com a melhor referencia.
@@ -235,7 +235,7 @@ class RoutingConfig:
             regiao ser promovida por corroboracao.
         nested_containment: Fracao da menor caixa coberta pela maior a partir da
             qual dois recortes da MESMA marca sao o mesmo logo, e so o de melhor
-            pontuacao entra no relatorio. Nao e IoU — ver `NestedRegionResolver`.
+            pontuacao entra no relatorio. Nao e IoU - ver `NestedRegionResolver`.
     """
 
     similarity_weight: float = 0.30
@@ -311,14 +311,14 @@ class JudgeConfig:
         enabled: Se o juiz roda. A CLI liga com `--vlm`.
         model: Peso a carregar. O default e aberto (apache-2.0) e cabe em 12 GB
             junto com o resto da pipeline. Trocar por um maior melhora o
-            parecer e custa VRAM — escolha de quem opera, nao default.
+            parecer e custa VRAM - escolha de quem opera, nao default.
         max_regions: Teto de regioes julgadas por imagem, das de maior
             pontuacao para as de menor. E o freio de tempo: sem ele, uma imagem
             com 40 regioes em revisao vira 40 passadas de VLM.
         confirm_above: Probabilidade de "sim" a partir da qual o juiz confirma.
         deny_below: Probabilidade de "sim" ate a qual o juiz nega.
 
-    A faixa entre `deny_below` e `confirm_above` e a abstencao — o juiz olhou e
+    A faixa entre `deny_below` e `confirm_above` e a abstencao - o juiz olhou e
     nao se decidiu, e a regiao segue para a fila humana. Ela e larga de
     proposito.
 
@@ -330,7 +330,7 @@ class JudgeConfig:
 
         poetry run python tools/calibrate_judge.py --rotuladas <pasta> --banco indice
 
-    Trocar o modelo em `model` **invalida os dois cortes** — cada modelo tem seu
+    Trocar o modelo em `model` **invalida os dois cortes** - cada modelo tem seu
     proprio vies. Recalibre antes de confiar no resultado.
     """
 

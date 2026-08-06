@@ -4,7 +4,7 @@ A fila e a saida operacional do sistema: ela diz o que acontece com a regiao
 depois que a pipeline termina. Nao e um grau de confianca, e um encaminhamento.
 
 Os valores permanecem em portugues de proposito: eles sao o contrato de saida
-do sistema — aparecem no json de relatorio e na tela da CLI, e traduzi-los
+do sistema - aparecem no json de relatorio e na tela da CLI, e traduzi-los
 quebraria quem ja consome esse formato.
 
 Typical usage:
@@ -23,7 +23,7 @@ class Queue(Enum):
         REVIEW: Ha um palpite e nao ha confianca. Vai para pessoa decidir.
         CONFUSION: Empate entre marcas do mesmo grupo declarado. Desempate
             obrigatorio, com as referencias lado a lado.
-        ORPHAN: Ha logo e o banco nao reconheceu. **E a referencia que falta** —
+        ORPHAN: Ha logo e o banco nao reconheceu. **E a referencia que falta** -
             o sinal que alimenta o banco de volta.
         NEGATIVE: E logo de marca fora do portfolio. Acerto, nao rejeicao:
             contabilizar como rejeicao mascara a qualidade real do sistema.

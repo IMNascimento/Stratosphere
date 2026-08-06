@@ -1,4 +1,4 @@
-"""Verificacao geometrica com pontos aprendidos — DISK para detectar, LightGlue para casar.
+"""Verificacao geometrica com pontos aprendidos - DISK para detectar, LightGlue para casar.
 
 Mesma pergunta do `SiftVerifier` e mesmo contrato: "e literalmente o mesmo desenho,
 sob uma transformacao coerente?". Muda quem responde, e isso muda tudo.
@@ -6,7 +6,7 @@ sob uma transformacao coerente?". Muda quem responde, e isso muda tudo.
 --------------------------------------------------------------------------
 POR QUE O SIFT NAO SERVIA
 --------------------------------------------------------------------------
-SIFT procura **canto**. Logo chapado — swoosh, wordmark, simbolo vetorial — nao
+SIFT procura **canto**. Logo chapado - swoosh, wordmark, simbolo vetorial - nao
 tem canto, e a camada inteira emudece exatamente onde o resto da pipeline mais
 precisa dela. Medido em 60 pares de referencia da mesma marca contra 60 pares de
 marcas diferentes, a 448px:
@@ -18,12 +18,12 @@ marcas diferentes, a 448px:
 
 A coluna que decide e a ultima: **`recall com precisao 100%` e quanto do par certo
 o verificador confirma sem deixar passar um unico par errado.** No SIFT isso e
-zero — nao existe limiar em que ele possa confirmar alguma coisa com seguranca,
+zero - nao existe limiar em que ele possa confirmar alguma coisa com seguranca,
 porque o melhor par errado empata com quase todo par certo. Ele nunca teve como
 tirar regiao da fila humana; so tinha como concordar com quem ja estava decidido.
 
 DISK detecta ponto onde nao ha canto, e LightGlue casa com atencao em vez de
-distancia de descritor — ele ve os dois conjuntos de pontos ao mesmo tempo e
+distancia de descritor - ele ve os dois conjuntos de pontos ao mesmo tempo e
 decide junto, entao nao precisa do teste de razao de Lowe nem do portao que ele
 impunha.
 
@@ -31,7 +31,7 @@ LoFTR empata em qualidade e perde em velocidade e em faixa dinamica (mediana 18
 contra 86 inliers em par certo), entao a escolha foi DISK.
 
 --------------------------------------------------------------------------
-A ESCALA MUDOU — LIMIAR ANTIGO NAO VALE
+A ESCALA MUDOU - LIMIAR ANTIGO NAO VALE
 --------------------------------------------------------------------------
 SIFT devolve mediana de 2 inliers em par certo; DISK+LightGlue devolve 86. Todo
 limiar calibrado para SIFT (`GeometryConfig.min_inliers`,
@@ -39,7 +39,7 @@ limiar calibrado para SIFT (`GeometryConfig.min_inliers`,
 `tools/calibrate_thresholds.py`, senao a camada passa a confirmar tudo.
 
 Os pesos sao abertos: DISK e Apache-2.0, LightGlue e Apache-2.0. SuperPoint
-ficou de fora de proposito — os pesos do Magic Leap sao **non-commercial**.
+ficou de fora de proposito - os pesos do Magic Leap sao **non-commercial**.
 
 Typical usage:
     verifier = LightGlueVerifier(config, device="cuda:0")
@@ -131,7 +131,7 @@ class LightGlueVerifier(IGeometricVerifier):
     def _select(self, candidates: Sequence[Candidate]) -> list[Candidate]:
         """Seleciona no maximo um candidato por marca, acima do portao.
 
-        Uma referencia por marca porque o objetivo e decidir **entre** marcas —
+        Uma referencia por marca porque o objetivo e decidir **entre** marcas -
         gastar comparacao em quatro fotos da mesma marca nao acrescenta
         informacao para essa decisao.
 
@@ -242,7 +242,7 @@ class LightGlueVerifier(IGeometricVerifier):
 
         Returns:
             O veredito, com o motivo preenchido quando nao confirma. **None
-            quando nao houve comparacao** — referencia sem pontos, ou menos de
+            quando nao houve comparacao** - referencia sem pontos, ou menos de
             quatro pares casados. Ausencia de veredito e diferente de veredito
             negativo, e so o None preserva essa distincao ate o roteador.
         """
@@ -305,7 +305,7 @@ class LightGlueVerifier(IGeometricVerifier):
         """Converte pontos em quadros locais, que e o formato que o casador espera.
 
         Escala e orientacao vao neutras: DISK devolve ponto sem elas, e o
-        LightGlue nao as usa para casar — quem resolve rotacao e escala e a
+        LightGlue nao as usa para casar - quem resolve rotacao e escala e a
         atencao dele, e nao a geometria do ponto.
 
         Args:

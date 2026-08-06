@@ -3,7 +3,7 @@
 Duas politicas de negocio moram aqui, e nenhuma das duas e estatistica:
 
 **Grupos de confusao.** Conjuntos de marcas que compartilham linguagem visual e
-contexto — mesmo setor, mesma paleta, mesmo tipo de aplicacao. Quando as duas
+contexto - mesmo setor, mesma paleta, mesmo tipo de aplicacao. Quando as duas
 melhores respostas do banco caem no mesmo grupo com margem pequena, o custo de
 errar e maior que o custo de perguntar, e a decisao vai para desempate
 independentemente da pontuacao.
@@ -11,7 +11,7 @@ independentemente da pontuacao.
 **Marcas negativas.** Concorrentes que entram no banco **sem serem clientes**.
 Sem elas o sistema e obrigado a escolher entre as marcas do portfolio e sempre
 escolhe alguma. Com elas, "isto e um logo de quem nao interessa" passa a ser uma
-resposta possivel — e um acerto, nao uma rejeicao.
+resposta possivel - e um acerto, nao uma rejeicao.
 
 Typical usage:
     groups = ConfusionGroups(

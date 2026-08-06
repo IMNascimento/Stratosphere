@@ -1,11 +1,11 @@
-"""Contrato do juiz visual — a segunda opiniao sobre o que ficou em duvida.
+"""Contrato do juiz visual - a segunda opiniao sobre o que ficou em duvida.
 
 Roda **depois** da primeira decisao e **apenas nas regioes que cairam em
 revisao**. E a diferenca entre julgar 7 regioes por imagem e julgar 50: numa
 base de 5.000 imagens/dia, isso separa dezenas de milhares de chamadas de
 centenas de milhares.
 
-A pergunta e sempre de comparacao — recorte contra referencia do banco — e nunca
+A pergunta e sempre de comparacao - recorte contra referencia do banco - e nunca
 "que marca e essa?". Ver `JudgeVerdict` para o porque.
 
 **Esta camada e a mais lenta por regiao.** As outras rodam em lote; esta faz uma
@@ -35,7 +35,7 @@ class IJudge(ABC):
             brand: Marca que o banco propos, para o juiz confirmar ou negar.
 
         Returns:
-            O parecer, ou **None quando o juiz nao opinou** — por falha (modelo
+            O parecer, ou **None quando o juiz nao opinou** - por falha (modelo
             que nao carrega, servico fora) ou por duvida.
 
             **Quando se abster por duvida e decisao do adaptador**, e nao de
@@ -50,7 +50,7 @@ class IJudge(ABC):
             nao concorda significa "olhei as duas imagens e nao sao a mesma
             marca", e manda a regiao para o descarte. Devolver isso quando
             ninguem olhou faria uma queda de rede **descartar deteccao real em
-            silencio** — verificado em teste: sem credencial, sete regioes
+            silencio** - verificado em teste: sem credencial, sete regioes
             legitimas em revisao viraram rejeicao automatica.
 
             Implementacoes **nao levantam excecao** por falha de servico: quem

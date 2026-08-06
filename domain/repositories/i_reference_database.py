@@ -1,4 +1,4 @@
-"""Contrato do banco de referencia — a peca que responde QUAL marca e.
+"""Contrato do banco de referencia - a peca que responde QUAL marca e.
 
 O banco e um repositorio de dominio, nao um port de aplicacao: "quais marcas se
 parecem com este vetor" e uma pergunta do dominio. A tecnologia que responde
@@ -43,7 +43,7 @@ class IReferenceDatabase(ABC):
 
         Raises:
             IncompatibleDimensionError: Se a dimensao do vetor nao bater com a
-                do banco. Nao degrada silenciosamente — uma consulta com
+                do banco. Nao degrada silenciosamente - uma consulta com
                 dimensao errada produz numeros plausiveis e sem significado.
         """
         ...
@@ -86,7 +86,7 @@ class IReferenceDatabase(ABC):
 
         Returns:
             Tuplas `(brand_a, brand_b, similaridade)` em ordem decrescente de
-            similaridade. Pares da mesma marca nunca aparecem — referencias
+            similaridade. Pares da mesma marca nunca aparecem - referencias
             parecidas dentro de uma marca sao redundancia, nao risco.
         """
         ...

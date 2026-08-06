@@ -1,4 +1,4 @@
-"""Contrato de acesso a imagem — leitura, recorte e medida de estrutura.
+"""Contrato de acesso a imagem - leitura, recorte e medida de estrutura.
 
 Existe como porta para que o dominio e os casos de uso nao conhecam biblioteca
 de imagem. `RgbImage` e deliberadamente opaco: quem consome so repassa o objeto
@@ -93,7 +93,7 @@ class IImageSource(ABC):
             folder: Raiz da busca.
 
         Returns:
-            Caminhos em ordem estavel — a ordem e contrato, porque
+            Caminhos em ordem estavel - a ordem e contrato, porque
             reprodutibilidade depende dela.
 
         Raises:

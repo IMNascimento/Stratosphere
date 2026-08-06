@@ -19,7 +19,7 @@ _LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR"})
 # Bibliotecas que registram em INFO coisa que e detalhe de implementacao delas:
 # cada requisicao HTTP ao hub, cada arquivo resolvido em cache. Isso enterra o
 # log da pipeline em ruido que nao ajuda ninguem a decidir nada. Em DEBUG elas
-# voltam a falar — quem pediu DEBUG quer justamente ver a rede.
+# voltam a falar - quem pediu DEBUG quer justamente ver a rede.
 _NOISY = ("httpx", "httpcore", "urllib3", "filelock", "huggingface_hub", "transformers")
 
 

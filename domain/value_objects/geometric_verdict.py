@@ -1,7 +1,7 @@
 """Value object do resultado da verificacao geometrica.
 
 A verificacao geometrica responde uma pergunta diferente da busca vetorial:
-"e literalmente o mesmo desenho, sob alguma transformacao coerente?" — nao
+"e literalmente o mesmo desenho, sob alguma transformacao coerente?" - nao
 "parece com", que e o que o codificador responde.
 
 As duas convivem porque **falham de formas diferentes**. A busca vetorial e
@@ -31,7 +31,7 @@ class GeometricVerdict:
         matches: Pares de pontos que sobreviveram ao teste de razao,
             antes de exigir coerencia geometrica. Sempre >= inliers.
         confirms: Se a evidencia foi suficiente para afirmar que e o mesmo
-            desenho. Falso nao significa "e outra marca" — significa "nao deu
+            desenho. Falso nao significa "e outra marca" - significa "nao deu
             para confirmar", que e diferente e precisa ser tratado diferente.
         reason: Explicacao curta de por que nao confirmou. Vazio quando confirma.
     """

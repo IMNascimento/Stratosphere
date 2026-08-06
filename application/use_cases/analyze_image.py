@@ -6,7 +6,7 @@ camada barata ja descartou.
 
 A ordem importa e nao e arbitraria: cada camada e mais cara que a anterior, e so
 ve o que a anterior deixou passar. A verificacao geometrica, em particular, so
-roda nos melhores candidatos de cada regiao — se rodasse em tudo, seria a camada
+roda nos melhores candidatos de cada regiao - se rodasse em tudo, seria a camada
 dominante do custo.
 
 Typical usage:
@@ -143,15 +143,15 @@ class AnalyzeImageUseCase:
         decidido com folga e nas que a similaridade ja tinha condenado.
 
         O custo era o dominante da pipeline. Numa imagem tipica sao ~55 regioes
-        e 4 referencias por regiao — 220 comparacoes, a ~87ms cada.
+        e 4 referencias por regiao - 220 comparacoes, a ~87ms cada.
 
         **O que decide quem e "duvidoso":** a fila que a pontuacao sozinha
         produziu. Aceite e rejeicao ja estao decididos; revisao, confusao e orfao
         nao. Com `only_when_uncertain` desligado, roda em tudo como antes.
 
         **O custo desta economia, dito claramente:** uma regiao rejeitada pela
-        pontuacao nao ganha segunda chance, e o orfao geometrico — a regra que
-        acha a referencia que falta — depende justamente de geometria forte com
+        pontuacao nao ganha segunda chance, e o orfao geometrico - a regra que
+        acha a referencia que falta - depende justamente de geometria forte com
         similaridade baixa. Por isso o guarda de similaridade: regiao na faixa do
         orfao continua sendo verificada mesmo tendo sido rejeitada.
 
@@ -190,7 +190,7 @@ class AnalyzeImageUseCase:
             return True
         # Candidata a orfao: o banco reconhece de longe e a geometria e quem
         # decide se ha logo ali. Sem esta excecao, a fila mais valiosa do
-        # sistema — a referencia que falta — deixaria de existir.
+        # sistema - a referencia que falta - deixaria de existir.
         return (
             decision.queue is Queue.AUTO_REJECT
             and region.top_similarity >= self._config.geometry.entry_similarity
@@ -243,7 +243,7 @@ class AnalyzeImageUseCase:
             verdict = self._judge.judge(crops[index], reference, candidate.brand)
             # None nao vira decisao: a regiao fica na fila humana, que e
             # exatamente onde ela ja estava. Quem se abstem por duvida tambem
-            # devolve None — so o adaptador sabe o que a confianca dele
+            # devolve None - so o adaptador sabe o que a confianca dele
             # significa, entao e la que essa linha e desenhada.
             if verdict is None:
                 continue
@@ -272,13 +272,13 @@ class AnalyzeImageUseCase:
 
         width, height = self._source.dimensions(image)
         if min(width, height) < config.min_side:
-            return f"lado menor que {config.min_side}px — miniatura ou icone"
+            return f"lado menor que {config.min_side}px - miniatura ou icone"
 
         density = self._source.edge_density(image)
         if density < config.min_edge_density:
             return (
                 f"densidade de bordas {density:.4f} abaixo de "
-                f"{config.min_edge_density} — imagem sem estrutura"
+                f"{config.min_edge_density} - imagem sem estrutura"
             )
         return None
 

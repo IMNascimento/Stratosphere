@@ -1,6 +1,6 @@
 """Comandos e saidas dos casos de uso.
 
-DTOs sao imutaveis e nao carregam regra de negocio — apenas transportam dados
+DTOs sao imutaveis e nao carregam regra de negocio - apenas transportam dados
 entre a borda e a aplicacao.
 
 Typical usage:
@@ -38,7 +38,7 @@ class RegionOutput:
         similarity: Semelhanca com a melhor referencia.
         margin: Vantagem sobre a rival mais proxima.
         inliers: Pontos coerentes da verificacao geometrica. Zero quando a
-            camada nao opinou — o campo nao distingue os dois casos, e por isso
+            camada nao opinou - o campo nao distingue os dois casos, e por isso
             `reasons` existe.
         reasons: Regras aplicadas, na ordem em que decidiram.
     """

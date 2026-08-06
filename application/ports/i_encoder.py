@@ -1,4 +1,4 @@
-"""Contrato do codificador — a peca que NAO treina e mesmo assim identifica.
+"""Contrato do codificador - a peca que NAO treina e mesmo assim identifica.
 
 O codificador nao sabe o que e uma marca. Ele sabe apenas que duas formas
 coincidem. E por isso que funciona sem treino por marca, e e por isso que marca
@@ -47,7 +47,7 @@ class IEncoder(ABC):
         Returns:
             Texto estavel entre execucoes, gravado no manifesto do banco. E o
             que permite recusar a consulta de um banco construido com outro
-            codificador — sem essa checagem o sistema devolve similaridades
+            codificador - sem essa checagem o sistema devolve similaridades
             plausiveis e completamente sem significado.
         """
         ...

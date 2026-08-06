@@ -3,11 +3,11 @@
 O juiz nao devolve "sim" ou "nao": devolve a probabilidade que o modelo deu a
 resposta "sim". **Essa probabilidade nao vem calibrada.** Modelo de instrucao
 tende a concordar com o que se pergunta, entao um corte ingenuo em 0.5 aprova
-tudo — medido: 0.606 a 0.673 em regiao que era acerto e em regiao que era erro,
+tudo - medido: 0.606 a 0.673 em regiao que era acerto e em regiao que era erro,
 com o mesmo "sim" nas duas.
 
 O que tem sinal e a **ordem**, nao o valor. Este script mede onde estao as duas
-distribuicoes — acerto e erro — e sugere os dois cortes que o juiz usa:
+distribuicoes - acerto e erro - e sugere os dois cortes que o juiz usa:
 
     p >= confirm_above   -> confirma, vai para aceite automatico
     p <= deny_below      -> nega, vai para descarte
@@ -15,7 +15,7 @@ distribuicoes — acerto e erro — e sugere os dois cortes que o juiz usa:
 
 Os cortes saem de percentil, e nao de arredondamento bonito: `confirm_above` fica
 acima de quase todo erro, e `deny_below` abaixo de quase todo acerto. O meio e
-grande de proposito — ele e a fila humana, e encolhe-lo sem medir e trocar
+grande de proposito - ele e a fila humana, e encolhe-lo sem medir e trocar
 revisao por erro silencioso.
 
 O rotulo vem da pasta, igual ao `calibrate_thresholds.py`:
@@ -98,7 +98,7 @@ def main(arguments: list[str] | None = None) -> int:
     for position, (path, brand) in enumerate(files, start=1):
         _measure(path, brand, config, source, encoder, detector, database, judge, collected)
         if position % 10 == 0:
-            log.info("  %d/%d — %d acertos, %d erros", position, len(files),
+            log.info("  %d/%d - %d acertos, %d erros", position, len(files),
                      len(collected.hits), len(collected.errors))
 
     _report(collected, config)
@@ -177,7 +177,7 @@ def _report(collected: Collected, config: AppConfig) -> None:
     print(f"  {collected.images} imagens, {len(collected.hits)} acertos, "
           f"{len(collected.errors)} erros")
     if not collected.hits or not collected.errors:
-        print("  amostra insuficiente — sem acerto ou sem erro, nao da para calibrar")
+        print("  amostra insuficiente - sem acerto ou sem erro, nao da para calibrar")
         return
 
     _distribution("acertos", collected.hits)

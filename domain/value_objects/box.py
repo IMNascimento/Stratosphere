@@ -101,8 +101,8 @@ class Box:
         comum quando um detector de vocabulario aberto olha o mesmo logo: um
         recorte justo no simbolo e outro folgado em volta descrevem a mesma
         coisa, mas dividem a area da uniao e ficam com IoU baixo. Medido em
-        imagem real, um recorte inteiramente dentro do outro deu IoU 0.32 —
-        longe de qualquer limiar de supressao razoavel — e contencao 1.0.
+        imagem real, um recorte inteiramente dentro do outro deu IoU 0.32 -
+        longe de qualquer limiar de supressao razoavel - e contencao 1.0.
 
         Args:
             other: Caixa a comparar, nas mesmas coordenadas de imagem.

@@ -8,8 +8,8 @@ chegasse sozinha. Mas ninguem fotografa um logo isolado: fotografa um backdrop
 com o patrocinador repetido oito vezes, um uniforme com a marca no peito e na
 manga, uma arena com o painel inteiro da mesma marca.
 
-Numa imagem real medida aqui, `volkswagen` aparecia tres vezes — uma aceita com
-110 inliers e duas em revisao — e `ifood` duas vezes, uma aceita com 127 inliers
+Numa imagem real medida aqui, `volkswagen` aparecia tres vezes - uma aceita com
+110 inliers e duas em revisao - e `ifood` duas vezes, uma aceita com 127 inliers
 e uma em revisao. As tres regioes em revisao eram a mesma marca que a imagem ja
 tinha confirmado com folga, e ainda assim iam para a fila humana como se ninguem
 soubesse de nada.
@@ -28,7 +28,7 @@ Duas travas mantem isso honesto:
   duvidosas nao viram uma certeza por se apoiarem; isso so propagaria o erro.
 - **A regiao promovida precisa de similaridade propria alta.** Medido, regiao
   errada tem similaridade mediana 0.539 e p90 de 0.755. Exigir 0.85 mantem a
-  promocao longe dessa distribuicao — a corroboracao decide entre "e esta marca"
+  promocao longe dessa distribuicao - a corroboracao decide entre "e esta marca"
   e "nao sei", e nao entre "e logo" e "e parede".
 
 --------------------------------------------------------------------------

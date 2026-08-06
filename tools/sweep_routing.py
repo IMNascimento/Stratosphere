@@ -1,7 +1,7 @@
 """Explora configuracoes de roteamento sobre um dump de sinais, sem tocar na GPU.
 
 Le o `.jsonl` do `dump_signals.py`, reconstroi as regioes e roda o **`QueueRouter`
-de verdade** — o mesmo objeto que a pipeline usa. Nenhuma regra e reimplementada
+de verdade** - o mesmo objeto que a pipeline usa. Nenhuma regra e reimplementada
 aqui: se o roteador mudar, esta ferramenta muda junto sozinha.
 
 --------------------------------------------------------------------------
@@ -10,11 +10,11 @@ AS TRES METRICAS, E POR QUE SAO ESSAS
 O objetivo declarado do projeto e "maxima precisao com minima revisao humana".
 Isso sao duas forcas opostas, e uma terceira que costuma ser esquecida:
 
-- **precisao do aceite** — das regioes aceitas sem humano, quantas acertaram a
+- **precisao do aceite** - das regioes aceitas sem humano, quantas acertaram a
   marca. E o numero que nao pode cair: aceite errado vai para o relatorio do
   cliente sem ninguem ver.
-- **volume de revisao** — quantas regioes exigem pessoa. E o custo.
-- **perda por rejeicao** — regioes cuja marca do topo estava CERTA e que foram
+- **volume de revisao** - quantas regioes exigem pessoa. E o custo.
+- **perda por rejeicao** - regioes cuja marca do topo estava CERTA e que foram
   descartadas assim mesmo. E o custo invisivel: nao aparece em nenhuma metrica
   de precisao, e some do relatorio sem deixar rastro.
 
@@ -24,7 +24,7 @@ excelente e nao encontra nada.
 --------------------------------------------------------------------------
 O ROTULO E POR IMAGEM, NAO POR CAIXA
 --------------------------------------------------------------------------
-`<raiz>/<marca>/arquivo.jpg` diz que a imagem contem aquela marca — nao que toda
+`<raiz>/<marca>/arquivo.jpg` diz que a imagem contem aquela marca - nao que toda
 caixa dentro dela seja daquela marca. Num backdrop com varios patrocinadores, as
 outras caixas contam como erro sem serem erro.
 
@@ -71,7 +71,7 @@ class Result:
         accepted_right: Dessas, quantas acertaram a marca.
         human: Regioes que exigem pessoa.
         lost: Regioes com a marca certa no topo que foram rejeitadas.
-        recoverable: Regioes com a marca certa no topo — o teto do que da para
+        recoverable: Regioes com a marca certa no topo - o teto do que da para
             aceitar corretamente.
         total: Regioes avaliadas.
     """
@@ -88,8 +88,8 @@ class Result:
         """Fracao dos aceites que acertaram a marca.
 
         Returns:
-            Entre 0.0 e 1.0. Vale 1.0 quando nada foi aceito — nenhum erro
-            cometido —, e por isso ela nunca e lida sozinha.
+            Entre 0.0 e 1.0. Vale 1.0 quando nada foi aceito - nenhum erro
+            cometido -, e por isso ela nunca e lida sozinha.
         """
         return self.accepted_right / self.accepted if self.accepted else 1.0
 
@@ -133,7 +133,7 @@ def main(arguments: list[str] | None = None) -> int:
     base = AppConfig()
     for path in files:
         records = _load(path)
-        print(f"\n=== {path.name} — {len(records)} regioes ===")
+        print(f"\n=== {path.name} - {len(records)} regioes ===")
         _report_header()
         _report("configuracao atual", _evaluate(records, base))
 
@@ -166,7 +166,7 @@ def _evaluate(records: list[dict[str, Any]], config: AppConfig) -> Result:
     """Roteia todas as regioes com uma configuracao e conta os desfechos.
 
     O resolvedor de aninhamento roda tambem, porque ele muda o que chega ao
-    relatorio — medir sem ele mediria uma pipeline que nao existe.
+    relatorio - medir sem ele mediria uma pipeline que nao existe.
 
     Args:
         records: Regioes do dump.

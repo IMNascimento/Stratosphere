@@ -4,7 +4,7 @@ E este caso de uso que sustenta a afirmacao "marca nova em minutos": nao ha
 treino, apenas codificacao de imagens novas e escrita de um arquivo.
 
 O layout esperado e `<raiz>/<marca>/<variante>/arquivo`. A marca e o primeiro
-nivel — e o rotulo que o sistema devolve. A variante e o segundo, e serve para
+nivel - e o rotulo que o sistema devolve. A variante e o segundo, e serve para
 tornar visivel no `ls` qual tipo de aplicacao da marca esta sub-representado.
 
 Typical usage:
@@ -125,8 +125,8 @@ class BuildDatabaseUseCase:
         """Codifica todas as referencias em lote.
 
         As referencias sao preparadas do mesmo jeito que uma regiao de consulta
-        sera preparada. Assimetria aqui — referencia esticada e consulta com
-        letterbox — e uma fonte silenciosa de similaridade baixa em par que
+        sera preparada. Assimetria aqui - referencia esticada e consulta com
+        letterbox - e uma fonte silenciosa de similaridade baixa em par que
         deveria casar.
 
         Args:
@@ -153,7 +153,7 @@ class BuildDatabaseUseCase:
         O corte e por marca e **nunca entre marcas**: duas marcas parecidas
         acima do limiar sao exatamente o que a auditoria precisa enxergar, nao
         algo a colapsar. Dentro de uma marca, porem, trinta fotos do mesmo
-        angulo sao um vetor — elas ocupam o topo da busca com copias e escondem
+        angulo sao um vetor - elas ocupam o topo da busca com copias e escondem
         os angulos que faltam.
 
         Args:

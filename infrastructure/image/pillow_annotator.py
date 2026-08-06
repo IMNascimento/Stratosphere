@@ -7,7 +7,7 @@ esta camada entra, e nada do que acontece aqui muda decisao nenhuma.
 caixas estao em coordenadas da imagem ORIGINAL, e o `IImageSource.load` aplica a
 rotacao EXIF antes de medir. Abrir o arquivo por fora dessa porta pularia a
 rotacao, e toda foto tirada de celular na vertical sairia com as caixas
-deslocadas — o tipo de defeito que so aparece em algumas fotos e faz duvidar do
+deslocadas - o tipo de defeito que so aparece em algumas fotos e faz duvidar do
 detector, nao do desenho.
 
 A cor vem da fila, nao da marca: o que se confere no olho e "esta regiao foi
@@ -71,7 +71,7 @@ class PillowAnnotator:
 
         Args:
             source: Arquivo analisado.
-            regions: Regioes a desenhar. Vazio grava a imagem sem marcacao —
+            regions: Regioes a desenhar. Vazio grava a imagem sem marcacao -
                 util para ver que a pipeline nao achou nada ali.
             destination: Arquivo de saida. Pastas intermediarias sao criadas.
 
@@ -118,7 +118,7 @@ class PillowAnnotator:
         O rotulo e preso aos quatro lados da imagem: sobe para cima da caixa
         quando ha espaco, desce para dentro quando ela encosta no topo, e recua
         para a esquerda quando passaria da borda direita. Logo em canto e o caso
-        comum — patrocinio costuma ficar na quina —, e rotulo cortado na borda
+        comum - patrocinio costuma ficar na quina -, e rotulo cortado na borda
         nao se le.
 
         Args:
@@ -162,7 +162,7 @@ class PillowAnnotator:
 
         Returns:
             A fonte. Versoes antigas do Pillow ignoram o tamanho e devolvem a
-            fonte fixa — o rotulo fica pequeno, mas continua legivel, e isso e
+            fonte fixa - o rotulo fica pequeno, mas continua legivel, e isso e
             melhor que quebrar a anotacao inteira.
         """
         try:
@@ -175,8 +175,8 @@ def annotated_path(source: Path, root: Path, destination_folder: Path) -> Path:
     """Calcula onde gravar a copia anotada de uma imagem.
 
     Espelha a estrutura da entrada dentro da pasta de saida. Sem isso, duas
-    imagens com o mesmo nome em subpastas diferentes — `nike/01.jpg` e
-    `itau/01.jpg` — gravariam uma por cima da outra, e a segunda apagaria a
+    imagens com o mesmo nome em subpastas diferentes - `nike/01.jpg` e
+    `itau/01.jpg` - gravariam uma por cima da outra, e a segunda apagaria a
     primeira em silencio.
 
     Args:

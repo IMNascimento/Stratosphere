@@ -1,4 +1,4 @@
-"""Verificacao geometrica — confirma que e literalmente o mesmo desenho.
+"""Verificacao geometrica - confirma que e literalmente o mesmo desenho.
 
 Pergunta diferente da que a busca vetorial responde. A busca diz "parece com";
 esta camada diz "e o mesmo desenho, sob uma transformacao coerente".
@@ -14,11 +14,11 @@ similaridade **baixa**. Um portao alto so deixa passar o que ja estava decidido,
 e a verificacao vira enfeite.
 
 **O limite desta camada.** Ela nao opina em logo chapado, pequeno ou vetorial
-demais — nao ha canto para extrair ponto. Isso e resultado valido e diferente de
+demais - nao ha canto para extrair ponto. Isso e resultado valido e diferente de
 veredito negativo; quem consome precisa tratar os dois casos separadamente, e o
 roteador faz isso renormalizando os pesos.
 
-Nada aqui tem peso treinado. E algoritmo puro — motivo pelo qual esta camada
+Nada aqui tem peso treinado. E algoritmo puro - motivo pelo qual esta camada
 nunca precisa ser retreinada quando entra marca nova.
 
 Typical usage:
@@ -92,7 +92,7 @@ class SiftVerifier(IGeometricVerifier):
         points, descriptors = self._extract(self._to_gray(crop))
         if descriptors is None or len(points) < _MIN_POINTS:
             # Silencio, e nao veredito zerado. Um veredito com 0 inliers diz
-            # "comparei e nao bate"; aqui nao houve comparacao nenhuma — nao ha
+            # "comparei e nao bate"; aqui nao houve comparacao nenhuma - nao ha
             # canto para extrair ponto. Devolver 0 inliers faria o roteador
             # aplicar o peso da geometria multiplicado por zero, derrubando o
             # teto da pontuacao em 40% de uma regiao que nunca teve chance. E o
@@ -109,7 +109,7 @@ class SiftVerifier(IGeometricVerifier):
     def _select(self, candidates: Sequence[Candidate]) -> list[Candidate]:
         """Seleciona no maximo um candidato por marca, acima do portao.
 
-        Uma referencia por marca porque o objetivo e decidir **entre** marcas —
+        Uma referencia por marca porque o objetivo e decidir **entre** marcas -
         gastar comparacao em quatro fotos da mesma marca nao acrescenta
         informacao para essa decisao.
 
@@ -223,7 +223,7 @@ class SiftVerifier(IGeometricVerifier):
 
         Returns:
             O veredito, com o motivo preenchido quando nao confirma. **None
-            quando nao houve comparacao** — referencia ilegivel ou sem pontos
+            quando nao houve comparacao** - referencia ilegivel ou sem pontos
             suficientes. Ausencia de veredito e diferente de veredito negativo,
             e so o None preserva essa distincao ate o roteador.
         """
@@ -240,8 +240,8 @@ class SiftVerifier(IGeometricVerifier):
         good = self._filter_by_ratio(descriptors, reference_descriptors)
         if len(good) < _POINTS_FOR_HOMOGRAPHY:
             # Tambem e silencio. Abaixo de quatro pares nao existe transformacao
-            # a estimar, entao a pergunta desta camada — "e o mesmo desenho sob
-            # alguma transformacao coerente?" — nao chegou a ser feita. Devolver
+            # a estimar, entao a pergunta desta camada - "e o mesmo desenho sob
+            # alguma transformacao coerente?" - nao chegou a ser feita. Devolver
             # veredito negativo aqui seria afirmar que os desenhos diferem, o
             # que a camada nao tem como saber.
             return None

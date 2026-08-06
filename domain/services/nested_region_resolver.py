@@ -1,12 +1,12 @@
 """Politica de logo repetido: o mesmo simbolo entra uma vez so no relatorio.
 
-Um detector de vocabulario aberto devolve varios recortes do MESMO logo — um
+Um detector de vocabulario aberto devolve varios recortes do MESMO logo - um
 justo no simbolo, um folgado com o fundo em volta, um intermediario. A supressao
 do detector nao remove esses porque ela usa IoU, e IoU e cego para aninhamento:
 recorte dentro de recorte divide a area da uniao e sai com IoU baixo.
 
 O estrago nao e caixa duplicada no desenho, e fila humana inflada. Medido numa
-imagem real, o mesmo escudo produziu tres regioes com tres destinos diferentes —
+imagem real, o mesmo escudo produziu tres regioes com tres destinos diferentes -
 `auto_aceite` no recorte justo, `revisao` no folgado e `orfao` no intermediario.
 **Os orfaos eram falsos**: recortes internos de um logo ja aceito com
 similaridade 0.98. A fila mais valiosa do sistema e justamente a que mais sofre,
@@ -17,8 +17,8 @@ mal enquadrado produz.
 POR QUE VENCE A MELHOR PONTUACAO, E NAO A MAIOR CAIXA
 --------------------------------------------------------------------------
 A intuicao diz "fica com a caixa que engloba as outras". Os dados dizem o
-contrario: no caso medido, a caixa maior tinha pontuacao 0.51 — ela engolia o
-texto embaixo do escudo e parte do fundo — e a menor, justa no simbolo, tinha
+contrario: no caso medido, a caixa maior tinha pontuacao 0.51 - ela engolia o
+texto embaixo do escudo e parte do fundo - e a menor, justa no simbolo, tinha
 0.87 com similaridade 0.96. Manter a maior entregaria uma regiao que descreve
 mais cena que marca.
 
@@ -30,14 +30,14 @@ CAIXA ANINHADA COLAPSA MESMO COM MARCAS DIFERENTES
 A primeira versao so agrupava marca igual, com o argumento de que caixa pequena
 de outra marca dentro de uma maior seria backdrop com varios patrocinadores. O
 dado desmentiu: num painel de coletiva, o logo da amazon produziu duas caixas
-aninhadas com contencao 1.00, uma afirmando `sadia` e outra `suvinil` — as duas
+aninhadas com contencao 1.00, uma afirmando `sadia` e outra `suvinil` - as duas
 erradas. Patrocinador ao lado de patrocinador fica **lado a lado**, nao um
 dentro do outro; aninhamento com marcas diferentes e a mesma regiao respondida
 duas vezes, e duas respostas para os mesmos pixels sao uma contradicao, nao dois
 logos.
 
-Custo assumido: logo pequeno legitimamente dentro de uma caixa maior — um simbolo
-no canto de uma placa que o detector tambem enquadrou inteira — perde uma das
+Custo assumido: logo pequeno legitimamente dentro de uma caixa maior - um simbolo
+no canto de uma placa que o detector tambem enquadrou inteira - perde uma das
 duas leituras. Fica a de maior pontuacao, que e a mais confiavel das duas.
 
 **So agrupa quem afirma marca.** Regiao sem marca nao tem o que deduplicar.
@@ -65,7 +65,7 @@ class NestedRegionResolver:
         containment: Fracao da menor caixa coberta pela maior a partir da qual
             duas caixas de marcas DIFERENTES descrevem o mesmo logo.
         same_brand_containment: O mesmo, para duas caixas da MESMA marca. Mais
-            permissivo de proposito — ver `__init__`.
+            permissivo de proposito - ver `__init__`.
     """
 
     def __init__(self, containment: float, same_brand_containment: float | None = None) -> None:
@@ -73,7 +73,7 @@ class NestedRegionResolver:
 
         Args:
             containment: Entre 0 e 1, para caixas de marcas diferentes. Exigir
-                1.0 seria rigido demais — nem todo aninhamento e perfeito, e o
+                1.0 seria rigido demais - nem todo aninhamento e perfeito, e o
                 recorte folgado costuma ultrapassar a borda do justo em alguns
                 pixels.
             same_brand_containment: Entre 0 e 1, para caixas da mesma marca.
@@ -87,7 +87,7 @@ class NestedRegionResolver:
                 O caso que forcou a distincao: o escudo da CBF gerava duas
                 caixas, o escudo inteiro e a parte de cima dele, com contencao
                 0.76. As duas passavam pelo limiar de 0.80 e as duas eram
-                desenhadas — caixa dentro de caixa, exatamente o que este
+                desenhadas - caixa dentro de caixa, exatamente o que este
                 servico existe para impedir.
 
         Raises:
@@ -109,7 +109,7 @@ class NestedRegionResolver:
                 produziu.
 
         Returns:
-            Os sobreviventes, **na ordem original** — a ordem do detector e
+            Os sobreviventes, **na ordem original** - a ordem do detector e
             estavel e reproduzivel, e trocar por ordem de pontuacao tornaria o
             relatorio mais dificil de comparar entre execucoes.
         """
@@ -132,8 +132,8 @@ class NestedRegionResolver:
 
         Returns:
             True quando as duas afirmam alguma marca e uma caixa esta contida na
-            outra acima do limiar. **A marca nao precisa ser a mesma** — ver o
-            cabecalho do modulo —, mas mesma marca usa um limiar mais folgado.
+            outra acima do limiar. **A marca nao precisa ser a mesma** - ver o
+            cabecalho do modulo -, mas mesma marca usa um limiar mais folgado.
         """
         candidate_region, candidate_decision = candidate
         keeper_region, keeper_decision = keeper

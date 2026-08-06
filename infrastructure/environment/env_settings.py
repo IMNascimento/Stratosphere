@@ -11,7 +11,7 @@ Do mais fraco para o mais forte:
 
     default do dataclass  <  .env  <  variavel ja exportada no shell  <  flag da CLI
 
-O `.env` **nao sobrescreve** variavel ja presente no ambiente — e o comportamento
+O `.env` **nao sobrescreve** variavel ja presente no ambiente - e o comportamento
 padrao do `dotenv`, e o que permite CI e container injetarem valor sem apagar o
 arquivo. As flags da CLI vem por ultimo porque sao a decisao mais explicita que
 alguem pode tomar.
@@ -40,11 +40,11 @@ from config.settings import AppConfig
 # Arquivo lido por default, relativo ao diretorio de trabalho.
 ENV_FILE = Path(".env")
 
-# Nome canonico do token no `huggingface_hub`. Nao e lido aqui — so precisa
+# Nome canonico do token no `huggingface_hub`. Nao e lido aqui - so precisa
 # chegar a `os.environ` para o download de peso restrito funcionar.
 HF_TOKEN_VARIABLE = "HF_TOKEN"
 
-# Modo offline do hub. Ligado, nenhuma requisicao sai — o que estiver em cache e
+# Modo offline do hub. Ligado, nenhuma requisicao sai - o que estiver em cache e
 # usado como esta, e o que faltar vira erro em vez de download.
 HF_OFFLINE_VARIABLE = "HF_HUB_OFFLINE"
 
@@ -61,7 +61,7 @@ def load_env_file(path: Path = ENV_FILE) -> bool:
     """Carrega o `.env` para o ambiente do processo, se ele existir.
 
     Args:
-        path: Arquivo a carregar. Ausencia nao e erro — rodar sem `.env` e o
+        path: Arquivo a carregar. Ausencia nao e erro - rodar sem `.env` e o
             caso normal em maquina que ja exporta as variaveis.
 
     Returns:
@@ -80,7 +80,7 @@ def apply_env_overrides(config: AppConfig) -> AppConfig:
         config: Configuracao com os defaults do projeto.
 
     Returns:
-        Nova instancia. Variavel ausente ou vazia nao sobrescreve nada — string
+        Nova instancia. Variavel ausente ou vazia nao sobrescreve nada - string
         vazia num `.env` significa "nao configurei", nunca "quero vazio".
     """
     device = _text(_DEVICE)
@@ -130,7 +130,7 @@ def hub_cache_state() -> tuple[Path, float, bool]:
     """Descreve onde os pesos ja baixados estao e se o hub sai a rede.
 
     Peso de modelo e baixado **uma vez** e fica em disco. O que se repete a cada
-    execucao e uma revalidacao de metadado — barata, mas visivel, e impossivel
+    execucao e uma revalidacao de metadado - barata, mas visivel, e impossivel
     sem rede. Ligar o modo offline pula essa ida e usa o que ja esta la.
 
     Returns:

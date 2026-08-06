@@ -15,13 +15,13 @@ Medido numa foto de coletiva, com a marca correta em primeiro lugar na busca:
     vivo                  1           REJEITADA
 
 O swoosh gigante de um painel procura vizinho entre as 27 referencias de
-uniforme da nike e nao acha nenhuma parecida. O consenso desaba — 2 de 25 — e a
+uniforme da nike e nao acha nenhuma parecida. O consenso desaba - 2 de 25 - e a
 regiao morre. **Nao e duvida sobre a marca; e aritmetica do banco.**
 
 --------------------------------------------------------------------------
 COMO ISTO NAO VIRA VIES
 --------------------------------------------------------------------------
-Promover recorte para o banco e o mecanismo de melhoria do proprio projeto — a
+Promover recorte para o banco e o mecanismo de melhoria do proprio projeto - a
 marca `cbf` ja tem 23 referencias `promovido`. Mas promover errado envenena o
 banco, e promover a partir da imagem de avaliacao **fabrica metrica**: o sistema
 passaria a reconhecer um recorte de si mesmo.
@@ -160,7 +160,7 @@ def _box(region: RegionOutput) -> Box:
 def _top_brand(region: RegionOutput) -> str | None:
     """Marca proposta mesmo quando a regiao foi rejeitada.
 
-    Regiao rejeitada tem `brand` nulo por invariante do dominio — nunca afirmar
+    Regiao rejeitada tem `brand` nulo por invariante do dominio - nunca afirmar
     marca no que foi descartado. Mas para garimpar referencia e justamente o
     descarte que interessa, entao aqui a marca vem do motivo registrado.
 

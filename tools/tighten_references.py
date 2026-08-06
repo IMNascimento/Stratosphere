@@ -12,20 +12,20 @@ banco real, no par `amazon x azul` recortado da MESMA foto de backdrop:
 
 Duas marcas diferentes a 0.903 nao e erro de rotulo: e o codificador
 descrevendo *placa clara arredondada com wordmark ao centro sobre fundo
-escuro*. Cor quase nao entra nessa conta — a mesma imagem em tons de cinza fica
+escuro*. Cor quase nao entra nessa conta - a mesma imagem em tons de cinza fica
 a 0.929 do original, e com o matiz girado de laranja para azul, a 0.965. O que
 separa marca de marca e a forma do que sobra no quadro.
 
 **E ha um piso.** Cortando a 40% a similaridade do par SOBE de novo, para 0.699:
 o corte comeu letras, e fragmento mutilado volta a parecer com outro fragmento
-mutilado. Por isso este script nao corta por fracao fixa — ele usa a caixa do
+mutilado. Por isso este script nao corta por fracao fixa - ele usa a caixa do
 detector, que segue a marca inteira, e ainda acrescenta uma folga pequena.
 
 --------------------------------------------------------------------------
 POR QUE O DETECTOR, E NAO UM CORTE CENTRAL
 --------------------------------------------------------------------------
 E a mesma peca que roda em producao. Reenquadrar a referencia com ela deixa o
-enquadramento da referencia igual ao da consulta por construcao — e assimetria
+enquadramento da referencia igual ao da consulta por construcao - e assimetria
 entre os dois lados e fonte silenciosa de similaridade baixa em par que deveria
 casar.
 
@@ -61,8 +61,8 @@ log = get_logger("tighten")
 # teste mostrou que invadir a marca piora. Melhor sobrar um fio que faltar letra.
 _MARGIN = 0.06
 
-# Abaixo disto a caixa provavelmente pegou um detalhe dentro do logo — uma letra
-# solta, um simbolo interno — e nao a marca. Referencia ja e um recorte: a marca
+# Abaixo disto a caixa provavelmente pegou um detalhe dentro do logo - uma letra
+# solta, um simbolo interno - e nao a marca. Referencia ja e um recorte: a marca
 # domina o quadro, entao caixa minuscula e sinal de que o detector se perdeu.
 _MIN_AREA_SHARE = 0.15
 
@@ -179,7 +179,7 @@ def _best_box(detections: tuple[Detection, ...], width: int, height: int) -> Box
 
     A confianca do detector sozinha nao serve: ela dispara em detalhe interno do
     logo com a mesma folga que na marca inteira. Como referencia ja e um
-    recorte, a marca domina o quadro — entao o filtro de area vem primeiro, e a
+    recorte, a marca domina o quadro - entao o filtro de area vem primeiro, e a
     confianca so desempata o que sobrou.
 
     Args:
@@ -233,7 +233,7 @@ def _print_report(report: Report, destination: Path) -> None:
         print(f"  {report.failed:>5} ilegiveis")
     if report.area_before:
         reduction = 1 - report.area_after / report.area_before
-        print(f"\narea media {reduction * 100:.1f}% menor — e o fundo que saiu do quadro")
+        print(f"\narea media {reduction * 100:.1f}% menor - e o fundo que saiu do quadro")
     print("\nProximo passo:")
     print(f"  poetry run stratosphere banco --referencias {destination} --destino indice")
 

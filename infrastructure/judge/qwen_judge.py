@@ -1,6 +1,6 @@
 """Juiz visual local, sobre um modelo aberto rodando na propria GPU.
 
-Zero custo por chamada e nenhum dado saindo da maquina — a diferenca em relacao
+Zero custo por chamada e nenhum dado saindo da maquina - a diferenca em relacao
 a um juiz de API nao e so preco, e tambem que recorte de imagem de cliente nao
 atravessa a rede.
 
@@ -19,14 +19,14 @@ Isso resolve de uma vez os tres problemas de usar um modelo pequeno como juiz:
 - **Uma passada, sem laco de geracao.** Muito mais rapido, e determinista.
 
 --------------------------------------------------------------------------
-ELE CONFIRMA OU NEGA — NAO PROPOE OUTRA MARCA
+ELE CONFIRMA OU NEGA - NAO PROPOE OUTRA MARCA
 --------------------------------------------------------------------------
 Um modelo local pequeno nao sabe o que e `divino_fogao`, `menzoil` ou
 `souza_lima`, e perguntar o nome so produziria alucinacao confiante. Entao ele
 responde apenas a pergunta que consegue responder olhando as duas imagens: **sao
 a mesma marca?**
 
-O roteador ja trata isso — a saida "discordo e sei o nome" simplesmente nunca
+O roteador ja trata isso - a saida "discordo e sei o nome" simplesmente nunca
 dispara com este adaptador, e a regiao segue para revisao humana como antes.
 
 Typical usage:
@@ -53,7 +53,7 @@ _NO = ("No", " No", "no", "Nao", " Nao", "nao", "NAO", "Não", "não")
 # A pergunta e em ingles porque foi medida melhor: nos mesmos 60 pares, ela
 # separa acerto de erro com AUC 0.809 contra 0.699 da versao em portugues. Um
 # modelo de 2B tem muito mais treino em ingles, e a diferenca aparece justamente
-# no que aqui importa — a ordem entre as respostas, nao o texto delas.
+# no que aqui importa - a ordem entre as respostas, nao o texto delas.
 _QUESTION = (
     "Image 1 is a crop from a photo. Image 2 is a reference logo of the brand {brand!r}.\n"
     "Do both images show the logo of the SAME company? Judge by the symbol shape and the "
@@ -92,7 +92,7 @@ class QwenJudge(IJudge):
         Returns:
             O parecer, ou None em dois casos que dao no mesmo para quem chama:
             o modelo falhou, ou o modelo olhou e ficou na faixa de duvida. Nos
-            dois a regiao fica na fila humana — nunca vira rejeicao.
+            dois a regiao fica na fila humana - nunca vira rejeicao.
         """
         try:
             self._prepare()
@@ -175,7 +175,7 @@ class QwenJudge(IJudge):
         o modelo ia escrever "The images show...".
 
         MEDIDO no Qwen3.5-4B: sem desligar o pensamento, o token mais provavel e
-        `The` com 100.0% e o AUC cai para 0.664 — que nao mede nada. No
+        `The` com 100.0% e o AUC cai para 0.664 - que nao mede nada. No
         Qwen2-VL-2B, que nao tem o modo, o topo e `Yes` com 91.9%.
 
         Args:
@@ -211,7 +211,7 @@ class QwenJudge(IJudge):
 
         Returns:
             Probabilidade entre 0.0 e 1.0, normalizada apenas entre as duas
-            respostas possiveis — o resto do vocabulario e ignorado de
+            respostas possiveis - o resto do vocabulario e ignorado de
             proposito, porque a pergunta so admite duas respostas.
         """
         conversation = [

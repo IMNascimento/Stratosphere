@@ -7,14 +7,14 @@ limiar que se quer experimentar.
 
 Entao aqui a parte cara roda uma vez e vira um arquivo. Depois o
 `sweep_routing.py` explora quantas configuracoes de roteamento quiser, em
-segundos, sobre esse mesmo arquivo — e usando o `QueueRouter` de verdade, nao
+segundos, sobre esse mesmo arquivo - e usando o `QueueRouter` de verdade, nao
 uma reimplementacao dele.
 
 Trocar o matcher geometrico **exige** um dump novo: os inliers sao produzidos
 aqui. Trocar peso, limiar ou regra de fila nao exige.
 
 O rotulo vem da pasta: `<raiz>/<marca>/arquivo.jpg` significa "esta imagem
-contem esta marca". E rotulo por imagem, nao por caixa — ver `sweep_routing.py`
+contem esta marca". E rotulo por imagem, nao por caixa - ver `sweep_routing.py`
 para o que isso implica na leitura das metricas.
 
 Typical usage:
@@ -178,7 +178,7 @@ def _walk(root: Path) -> Iterator[tuple[Path, str]]:
 
     Duas formas de organizacao, porque o rotulo pode vir de dois lugares. Com
     subpastas, `<raiz>/<marca>/arquivo` da o rotulo por imagem. Sem subpastas, o
-    rotulo vem do COCO e e resolvido depois, por caixa — que e melhor, e por
+    rotulo vem do COCO e e resolvido depois, por caixa - que e melhor, e por
     isso o campo fica vazio aqui em vez de receber um palpite.
 
     Args:

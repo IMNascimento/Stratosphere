@@ -50,7 +50,7 @@ class AuditDatabaseUseCase:
         """Lista marcas com cobertura fina demais para funcionar bem.
 
         Marca com poucas referencias tende a produzir orfaos em vez de acertos.
-        Saber disso de antemao muda a leitura de qualquer metrica por marca —
+        Saber disso de antemao muda a leitura de qualquer metrica por marca -
         sem isso, o baixo desempenho parece defeito do modelo quando e falta de
         material.
 

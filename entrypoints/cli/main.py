@@ -12,7 +12,7 @@ portugues: eles sao a interface publica ja documentada no README, e traduzi-los
 quebraria quem ja usa a ferramenta.
 
 O entrypoint so fala com o container e com os casos de uso. Ele nao conhece
-OWLv2, DINOv2 nem SIFT — trocar qualquer um deles nao muda nada aqui.
+OWLv2, DINOv2 nem SIFT - trocar qualquer um deles nao muda nada aqui.
 
 Typical usage:
     poetry run stratosphere banco --referencias marcas/ --destino indice/
@@ -125,7 +125,7 @@ def _command_environment(options: argparse.Namespace) -> int:
     if has_hf_token():
         print(f"  {HF_TOKEN_VARIABLE:<14} definido")
     else:
-        print(f"  {HF_TOKEN_VARIABLE:<14} ausente — so baixa modelo de acesso livre")
+        print(f"  {HF_TOKEN_VARIABLE:<14} ausente - so baixa modelo de acesso livre")
         print(f"  {'':<14} preencha em {ENV_FILE} (ver .env.example)")
     print(f"  {'detector':<14} {config.detector.identifier}")
     print(f"  {'codificador':<14} {config.encoder.identifier}")
@@ -135,7 +135,7 @@ def _command_environment(options: argparse.Namespace) -> int:
     cache, size, offline = hub_cache_state()
     print(f"  {'cache':<14} {cache} | {size:.1f} GB ja em disco")
     if offline:
-        print(f"  {'rede':<14} offline — nada e baixado, so o que ja esta em cache e usado")
+        print(f"  {'rede':<14} offline - nada e baixado, so o que ja esta em cache e usado")
     else:
         print(f"  {'rede':<14} revalida metadado a cada execucao")
         print(f"  {'':<14} para parar com isso: HF_HUB_OFFLINE=1 no .env")
@@ -149,7 +149,7 @@ def _command_environment(options: argparse.Namespace) -> int:
             memory = properties.total_memory / 1024**3
             print(f"  GPU            {properties.name} | {memory:.1f} GB")
         else:
-            print("  GPU            indisponivel — a pipeline roda em CPU, bem mais devagar")
+            print("  GPU            indisponivel - a pipeline roda em CPU, bem mais devagar")
     except ImportError:
         print("  GPU            nao verificavel sem torch")
 
@@ -166,7 +166,7 @@ def _command_environment(options: argparse.Namespace) -> int:
         print(f"  AUSENTE em {database}")
         print("  construa com:  poetry run stratosphere banco --referencias <pasta>")
 
-    print("\n" + ("ambiente pronto." if all_present else "ambiente INCOMPLETO — ver acima."))
+    print("\n" + ("ambiente pronto." if all_present else "ambiente INCOMPLETO - ver acima."))
     return 0 if all_present else 1
 
 
@@ -201,7 +201,7 @@ def _command_database(options: argparse.Namespace) -> int:
         alert = "   <- poucas referencias" if quantity < 15 else ""
         print(f"  {brand:<24} {quantity:>4}{alert}")
 
-    print("\nProximo passo — SEMPRE audite antes de usar:")
+    print("\nProximo passo - SEMPRE audite antes de usar:")
     print("  poetry run stratosphere auditar")
     return 0
 
@@ -220,7 +220,7 @@ def _command_audit(options: argparse.Namespace) -> int:
     """
     container = _container(options)
     if container.audit_database is None:
-        log.error("banco ausente em %s — construa com `stratosphere banco`", options.banco)
+        log.error("banco ausente em %s - construa com `stratosphere banco`", options.banco)
         return _DOMAIN_ERROR_CODE
 
     output = container.audit_database.execute()
@@ -261,7 +261,7 @@ def _command_analyze(options: argparse.Namespace) -> int:
     """
     container = _container(options)
     if container.analyze_image is None:
-        log.error("banco ausente em %s — construa com `stratosphere banco`", options.banco)
+        log.error("banco ausente em %s - construa com `stratosphere banco`", options.banco)
         return _DOMAIN_ERROR_CODE
 
     paths = _resolve_inputs(container, Path(options.entrada), options.limite)
@@ -272,7 +272,7 @@ def _command_analyze(options: argparse.Namespace) -> int:
     if options.vlm:
         judge = _config(options).judge
         log.info(
-            "juiz visual ligado: %s, ate %d regioes por imagem — modelo local, primeira "
+            "juiz visual ligado: %s, ate %d regioes por imagem - modelo local, primeira "
             "execucao baixa os pesos",
             judge.model,
             judge.max_regions,
@@ -337,7 +337,7 @@ def _annotate_by_queue(
     Cada copia leva **apenas as caixas daquela fila**. Quem abre
     `anotadas/orfao/` esta decidindo promocao para o banco, e caixa de outra
     fila no meio so atrapalha essa decisao. A mesma imagem aparece em mais de
-    uma pasta quando tem regioes de filas diferentes — o que e a informacao
+    uma pasta quando tem regioes de filas diferentes - o que e a informacao
     certa: ela exige duas acoes distintas.
 
     Args:

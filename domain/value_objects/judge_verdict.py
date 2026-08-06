@@ -5,7 +5,7 @@ imagens sao a mesma marca?", com o recorte de um lado e a referencia do banco do
 outro. A diferenca nao e estilistica.
 
 Perguntar "que marca e essa?" so funciona para marca que o modelo conhece de
-treino — nike, amazon, volkswagen. Metade do portfolio deste projeto e
+treino - nike, amazon, volkswagen. Metade do portfolio deste projeto e
 `divino_fogao`, `menzoil`, `souza_lima`, `dryon`, `getv`: marca regional que
 nenhum modelo de linguagem viu, e sobre a qual ele vai inventar um nome
 plausivel. Comparacao funciona igual para marca famosa e desconhecida, porque a
@@ -32,7 +32,7 @@ class JudgeVerdict:
         brand: Marca que o juiz afirma. Igual a do banco quando concorda; outra
             quando discorda e sabe nomear; None quando discorda e nao sabe.
         confidence: Quanta certeza o juiz declara, entre 0.0 e 1.0. **E a
-            certeza declarada pelo modelo, nao uma probabilidade calibrada** —
+            certeza declarada pelo modelo, nao uma probabilidade calibrada** -
             serve para ordenar casos, nao para virar limiar sozinha.
         reason: Justificativa curta, em uma frase. Vai para os motivos da
             decisao e e o que uma pessoa le na fila de revisao.

@@ -46,14 +46,14 @@ class IncompatibleDimensionError(DomainError):
         super().__init__(
             f"dimensao incompativel: consulta D={query_dimension} "
             f"vs banco D={database_dimension}. O banco foi construido com outro "
-            f"codificador — reconstrua o indice."
+            f"codificador - reconstrua o indice."
         )
 
 
 class IncompatibleEncoderError(DomainError):
     """Banco construido com um codificador e consultado com outro.
 
-    Sem esta checagem o sistema roda, devolve similaridades e monta relatorio —
+    Sem esta checagem o sistema roda, devolve similaridades e monta relatorio -
     e tudo esta errado, porque os dois espacos vetoriais nao tem relacao nenhuma.
     E o tipo de defeito que consome semanas ate ser percebido.
     """
@@ -67,7 +67,7 @@ class IncompatibleEncoderError(DomainError):
         """
         super().__init__(
             f"banco construido com codificador {database_signature!r} mas a "
-            f"execucao usa {current_signature!r}. Espacos vetoriais diferentes — "
+            f"execucao usa {current_signature!r}. Espacos vetoriais diferentes - "
             f"reconstrua o indice."
         )
 

@@ -1,19 +1,19 @@
-"""Prepara uma imagem de logo para entrar no banco — e diz se ela deve entrar.
+"""Prepara uma imagem de logo para entrar no banco - e diz se ela deve entrar.
 
 --------------------------------------------------------------------------
 POR QUE ISTO EXISTE
 --------------------------------------------------------------------------
 Referencia nova nao e sempre ganho. Ela pode ser:
 
-- **redundante** — quase igual a uma que ja esta la. Nao acrescenta cobertura,
+- **redundante** - quase igual a uma que ja esta la. Nao acrescenta cobertura,
   ocupa o topo da busca com copia e ainda desloca vizinho util do top-k, que e o
   que alimenta o consenso.
-- **perigosa** — parecida demais com referencia de OUTRA marca. Cada par assim e
+- **perigosa** - parecida demais com referencia de OUTRA marca. Cada par assim e
   um falso positivo agendado. Medido no banco antigo: eram 238 pares acima do
   limiar de alerta, e eles explicavam sozinhos `itau` sendo lido como `sadia`.
-- **mal enquadrada** — com a placa, a moldura e o fundo em volta. Isso ensina a
+- **mal enquadrada** - com a placa, a moldura e o fundo em volta. Isso ensina a
   superficie, nao a marca.
-- **rotulada errado** — acontece, e o banco nao tem como saber.
+- **rotulada errado** - acontece, e o banco nao tem como saber.
 
 Esta ferramenta responde as quatro perguntas antes de a imagem entrar, e grava
 uma copia ja preparada. Ela **nao** escreve no banco: a decisao final e humana, e
@@ -23,7 +23,7 @@ o relatorio existe para essa decisao ser informada em vez de otimista.
 O QUE ELA FAZ COM A IMAGEM
 --------------------------------------------------------------------------
 1. Compoe transparencia sobre o fundo neutro do recorte. PNG com alpha perdido
-   vira retangulo preto — quatro referencias do banco original eram exatamente
+   vira retangulo preto - quatro referencias do banco original eram exatamente
    isso, e uma delas colocava `cimed x nike` a 0.951 de similaridade.
 2. Reenquadra com o **proprio detector da pipeline**, nao com corte fixo. Assim o
    enquadramento da referencia fica igual ao da consulta por construcao, e
@@ -193,10 +193,10 @@ def _evaluate(  # noqa: PLR0913 - e uma ferramenta de diagnostico, tudo vem de f
         )
         return verdict
     if not reframed:
-        verdict.notes.append("o detector nao achou logo aqui — confira o enquadramento")
+        verdict.notes.append("o detector nao achou logo aqui - confira o enquadramento")
 
     # Codifica a preparada E a original. O reenquadramento muda o vetor o
-    # bastante para uma copia exata deixar de bater consigo mesma — medido: uma
+    # bastante para uma copia exata deixar de bater consigo mesma - medido: uma
     # referencia do proprio banco, reenquadrada, ficou a 0.905 da vizinha mais
     # proxima em vez de 0.99 de si. Sem os dois lados, a checagem de redundancia
     # deixaria duplicata entrar.
@@ -211,7 +211,7 @@ def _evaluate(  # noqa: PLR0913 - e uma ferramenta de diagnostico, tudo vem de f
     neighbours = database.search(vectors[0], 60)
     originais = database.search(vectors[1], 60)
     if not neighbours:
-        verdict.notes.append("banco vazio — nada com que comparar")
+        verdict.notes.append("banco vazio - nada com que comparar")
         return verdict
 
     verdict.top_brand = neighbours[0].brand
@@ -235,16 +235,16 @@ def _evaluate(  # noqa: PLR0913 - e uma ferramenta de diagnostico, tudo vem de f
     if verdict.nearest_same >= options.redundancia:
         verdict.problems.append(
             f"REDUNDANTE: {verdict.nearest_same:.3f} contra "
-            f"{verdict.nearest_same_path} — nao acrescenta cobertura"
+            f"{verdict.nearest_same_path} - nao acrescenta cobertura"
         )
     if verdict.nearest_other >= options.alerta:
         verdict.problems.append(
             f"PERIGOSA: {verdict.nearest_other:.3f} contra {verdict.nearest_other_brand!r}"
-            " — falso positivo agendado"
+            " - falso positivo agendado"
         )
     # Teste de rotulo RELATIVO, e nao contra um limiar absoluto: a pergunta e
     # "o banco prefere outra marca a que voce declarou?". Comparar com um corte
-    # fixo deixava passar o caso obvio — uma imagem de guarana declarada como
+    # fixo deixava passar o caso obvio - uma imagem de guarana declarada como
     # nike, com o banco lendo guarana a 0.905, escapava porque 0.905 < 0.92.
     prefers_other = verdict.top_brand != brand and verdict.top_similarity > (
         verdict.nearest_same + options.margem_rotulo
@@ -257,12 +257,12 @@ def _evaluate(  # noqa: PLR0913 - e uma ferramenta de diagnostico, tudo vem de f
         )
     if same is None and not prefers_other:
         verdict.notes.append(
-            f"nenhuma referencia de {brand!r} entre os 60 vizinhos — variante nova, "
+            f"nenhuma referencia de {brand!r} entre os 60 vizinhos - variante nova, "
             "e o tipo mais valioso de referencia"
         )
     elif same is not None and verdict.nearest_same < 0.75:
         verdict.notes.append(
-            f"distante das existentes ({verdict.nearest_same:.3f}) — cobre uma "
+            f"distante das existentes ({verdict.nearest_same:.3f}) - cobre uma "
             "aplicacao que o banco nao tinha"
         )
     return verdict
@@ -279,7 +279,7 @@ def _prepare(
     Args:
         path: Imagem candidata.
         config: Configuracao completa.
-        source: Acesso a imagem — ja compoe transparencia no carregamento.
+        source: Acesso a imagem - ja compoe transparencia no carregamento.
         detector: Detector agnostico.
 
     Returns:
@@ -307,7 +307,7 @@ def _best_box(detections: tuple[Detection, ...], width: int, height: int) -> Box
 
     Returns:
         A caixa escolhida, ou None quando nada foi detectado ou a caixa cobre
-        quase tudo — nesse caso reenquadrar nao mudaria nada.
+        quase tudo - nesse caso reenquadrar nao mudaria nada.
     """
     if not detections:
         return None
@@ -384,7 +384,7 @@ def _report(verdicts: list[Verdict], destination: Path, options: argparse.Namesp
               f"--referencias {options.destino} --destino {options.banco}")
         print(f"  poetry run stratosphere --banco {options.banco} auditar")
     elif not aprovadas:
-        print("nada aprovado — nenhuma copia gravada")
+        print("nada aprovado - nenhuma copia gravada")
 
 
 def _walk(root: Path) -> Iterator[Path]:

@@ -1,4 +1,4 @@
-"""Codificador de imagem — a peca que identifica a marca sem treinar por marca.
+"""Codificador de imagem - a peca que identifica a marca sem treinar por marca.
 
 Usa um modelo auto-supervisionado, que aprendeu correspondencia de forma e
 textura sem rotulo. Isso casa melhor com "e o mesmo desenho?" do que um modelo
@@ -11,18 +11,18 @@ A AGREGACAO E O PARAMETRO MAIS IMPORTANTE DESTE ARQUIVO
 O modelo produz um token global e um token por retalho da imagem. Como reduzir
 isso a um vetor muda o resultado mais do que trocar de modelo:
 
-- `global` — so o token global. Perde detalhe fino de forma.
-- `media` — media de todos os retalhos. **Dilui o logo no fundo**: um recorte de
+- `global` - so o token global. Perde detalhe fino de forma.
+- `media` - media de todos os retalhos. **Dilui o logo no fundo**: um recorte de
   logo em painel de patrocinio e majoritariamente parede lisa, e a media descreve
   a parede.
-- `concatenado` — global mais media. O compromisso usual, e herda o problema da
+- `concatenado` - global mais media. O compromisso usual, e herda o problema da
   media.
-- `centro` — media apenas do quarto central dos retalhos. **O padrao.** O
+- `centro` - media apenas do quarto central dos retalhos. **O padrao.** O
   detector ja centra a caixa no logo, entao a borda do recorte e contexto por
   construcao. Ignorar a borda faz o vetor descrever a marca em vez da cena.
 
 A diferenca aparece no tipo de erro: com agregacao que inclui a borda, regioes
-de marcas diferentes no MESMO tipo de painel ficam proximas — o vetor descreve o
+de marcas diferentes no MESMO tipo de painel ficam proximas - o vetor descreve o
 painel, nao o logo.
 
 Os nomes das agregacoes seguem em portugues de proposito: eles entram na
@@ -117,7 +117,7 @@ class Dinov2Encoder(IEncoder):
         # NaN aqui e sempre estouro numerico, e quase sempre float16 num modelo
         # grande demais para ele. Sem esta checagem o banco e gravado inteiro de
         # NaN e a falha so aparece muito depois, na primeira busca, como
-        # "similaridade fora de [-1, 1]" — medido: 753 de 753 referencias.
+        # "similaridade fora de [-1, 1]" - medido: 753 de 753 referencias.
         if not np.isfinite(matrix).all():
             raise ValueError(
                 f"{self._config.identifier!r} produziu vetor nao finito em "
@@ -130,7 +130,7 @@ class Dinov2Encoder(IEncoder):
         """Retorna a assinatura estavel do codificador.
 
         Inclui a agregacao porque o mesmo modelo com agregacoes diferentes
-        produz espacos vetoriais distintos — e as dimensoes podem coincidir por
+        produz espacos vetoriais distintos - e as dimensoes podem coincidir por
         acaso, o que tornaria o erro invisivel.
 
         Returns:
@@ -180,12 +180,12 @@ class Dinov2Encoder(IEncoder):
         Returns:
             Tensor `(lote, dimensao)` conforme a agregacao configurada.
         """
-        # Alem do CLS, alguns modelos da familia trazem tokens de REGISTRO —
+        # Alem do CLS, alguns modelos da familia trazem tokens de REGISTRO -
         # a DINOv3 tem quatro. Fatiar assumindo so o CLS deixa esses quatro
         # misturados aos retalhos, a contagem para de formar grade quadrada e o
         # `centro` cai silenciosamente para a media completa. Medido, a diferenca
         # entre fatiar certo e errado na DINOv3-vitl16 e 0.769 contra 0.528 de
-        # AUC — a agregacao errada e pior que moeda.
+        # AUC - a agregacao errada e pior que moeda.
         prefix = 1 + int(getattr(self._model.config, "num_register_tokens", 0) or 0)
         global_ = states[:, 0]
         patches = states[:, prefix:]
@@ -206,7 +206,7 @@ class Dinov2Encoder(IEncoder):
 
         Returns:
             Tensor `(lote, dimensao)`. Cai para a media completa quando os
-            retalhos nao formam uma grade quadrada — situacao possivel em
+            retalhos nao formam uma grade quadrada - situacao possivel em
             modelos com tokens extras, e melhor degradar que quebrar.
         """
         quantity = int(patches.shape[1])

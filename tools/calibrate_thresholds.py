@@ -20,7 +20,7 @@ inliers em vez de 25.
 COMO O ROTULO E OBTIDO
 --------------------------------------------------------------------------
 Pela pasta: `<raiz>/<marca>/arquivo.jpg` significa "esta imagem contem esta
-marca". E rotulo por imagem, nao por caixa — entao uma regiao cuja marca do topo
+marca". E rotulo por imagem, nao por caixa - entao uma regiao cuja marca do topo
 bate com a pasta conta como **acerto provavel**, e uma que aponta outra marca
 conta como **erro provavel**.
 
@@ -232,7 +232,7 @@ def _report(collected: Collected, config: AppConfig) -> None:
     print(f"\n{collected.images} imagens, {len(collected.samples)} regioes")
     print(f"  {len(hits)} acertos provaveis, {len(misses)} erros provaveis")
     if not hits or not misses:
-        print("\nsem amostras suficientes dos dois lados — nada a sugerir")
+        print("\nsem amostras suficientes dos dois lados - nada a sugerir")
         return
 
     print("\n--- SIMILARIDADE ---")

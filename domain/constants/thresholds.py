@@ -10,13 +10,13 @@ O lugar de sobrescrever e `config/settings.py`, nunca este arquivo.
 
 # Similaridade abaixo da qual a evidencia do banco conta como nula.
 # MEDIDO em 84 imagens rotuladas (158 regioes): e o percentil 90 dos ERROS. O
-# valor anterior, 0.68, ficava abaixo disso — o sistema pagava credito de
+# valor anterior, 0.68, ficava abaixo disso - o sistema pagava credito de
 # similaridade para ruido.
 DEFAULT_MIN_SIMILARITY: float = 0.86
 
 # Similaridade a partir da qual a evidencia do banco conta como maxima.
 # MEDIDO: percentil 75 dos acertos. Os acertos tem mediana 0.930 e p90 0.970;
-# os erros, mediana 0.539 e p90 0.755 — a similaridade separa bem, e a escala
+# os erros, mediana 0.539 e p90 0.755 - a similaridade separa bem, e a escala
 # agora comeca onde o ruido acaba.
 DEFAULT_MAX_SIMILARITY: float = 0.99
 
@@ -25,7 +25,7 @@ DEFAULT_CONFIDENT_MARGIN: float = 0.15
 
 # Inliers de RANSAC que ja caracterizam geometria confirmada.
 # ATENCAO: este valor so vale para o matcher em uso. As escalas nao sao
-# comparaveis — no mesmo conjunto de 60 pares certos, SIFT devolve mediana 2 e
+# comparaveis - no mesmo conjunto de 60 pares certos, SIFT devolve mediana 2 e
 # DISK+LightGlue devolve 86.
 # MEDIDO para o LightGlue, em pares de referencia com rotulo limpo: par de
 # marcas DIFERENTES chega no maximo a 52 inliers, e par da mesma marca tem
@@ -49,12 +49,12 @@ DEFAULT_ORPHAN_MIN_INLIERS: int = 20
 # Similaridade abaixo da qual, havendo confirmacao geometrica, a regiao e orfa:
 # o banco tem a marca e nao tem esta variacao dela.
 # MEDIDO: percentil 10 dos acertos. Em 0.88 a regra disparava no MEIO da faixa
-# normal — uma regiao com 27 inliers e similaridade 0.869 virava orfa por onze
+# normal - uma regiao com 27 inliers e similaridade 0.869 virava orfa por onze
 # milesimos, sem faltar variacao nenhuma no banco.
 DEFAULT_ORPHAN_MAX_SIMILARITY: float = 0.90
 
 # Densidade de borda abaixo da qual a imagem nao tem estrutura suficiente para
-# valer uma passada de detector. Permissivo de proposito — o que se descarta
+# valer uma passada de detector. Permissivo de proposito - o que se descarta
 # aqui nunca mais volta, e o recall do detector e o teto do sistema.
 DEFAULT_MIN_EDGE_DENSITY: float = 0.004
 
@@ -66,13 +66,13 @@ DEFAULT_NESTED_CONTAINMENT: float = 0.80
 
 # Consenso a partir do qual a regiao e aceita sem humano, independentemente da
 # pontuacao. MEDIDO em 84 imagens rotuladas: acima de 0.80 nao houve um unico
-# erro em 15 regioes. E o sinal que resgata logo chapado — swoosh, wordmark —
+# erro em 15 regioes. E o sinal que resgata logo chapado - swoosh, wordmark -
 # cuja geometria nao tem canto para dar ponto e cuja similaridade absoluta cai
 # na faixa do ruido.
 DEFAULT_CONSENSUS_ACCEPT: float = 0.80
 
 # Concordantes ABSOLUTOS exigidos junto com o consenso. Sem isto, marca com 2
-# referencias no banco alcanca consenso 1.0 trivialmente — o teto do consenso e
+# referencias no banco alcanca consenso 1.0 trivialmente - o teto do consenso e
 # `min(top-k, referencias da marca)`, e unanimidade de 2 nao vale o mesmo que
 # unanimidade de 25.
 DEFAULT_CONSENSUS_MIN_AGREEING: int = 8
@@ -83,7 +83,7 @@ DEFAULT_CONSENSUS_MIN_AGREEING: int = 8
 # humano.
 # MEDIDO com `tools/calibrate_judge.py`. Os numeros parecem altos e sao: modelo
 # de instrucao concorda com quase tudo que se pergunta a ele, entao a faixa util
-# nao fica em volta de 0.5 — fica no topo. Corte ingenuo em 0.5 aprova acerto e
+# nao fica em volta de 0.5 - fica no topo. Corte ingenuo em 0.5 aprova acerto e
 # erro igualmente, verificado em medicao.
 # Trocar o modelo do juiz invalida os dois valores.
 DEFAULT_JUDGE_CONFIRM_ABOVE: float = 0.92
@@ -97,24 +97,24 @@ DEFAULT_JUDGE_DENY_BELOW: float = 0.60
 # MEDIDO com rotulo limpo em 60 pares de marcas diferentes: o maximo alcancado
 # foi 52 inliers, contra mediana 86 nos pares da mesma marca. Acima de 90 nao
 # houve par errado.
-# Depende do matcher — trocar o verificador invalida este valor.
+# Depende do matcher - trocar o verificador invalida este valor.
 DEFAULT_GEOMETRY_ACCEPT_INLIERS: float = 90.0
 
 
 # Inliers abaixo dos quais a contagem e ruido e o veredito geometrico conta como
-# SILENCIO — peso redistribuido — em vez de evidencia fraca.
+# SILENCIO - peso redistribuido - em vez de evidencia fraca.
 # MEDIDO: par de marcas diferentes tem mediana 8 inliers e chega a 52; par da
 # mesma marca tem mediana 86. Nessa faixa de baixo as duas distribuicoes se
-# sobrepoem, entao a contagem nao diz nada — e tratar "nao diz nada" como "diz
+# sobrepoem, entao a contagem nao diz nada - e tratar "nao diz nada" como "diz
 # pouco a favor" derruba a nota de quem nunca teve chance.
-# Depende do matcher — trocar o verificador invalida este valor.
+# Depende do matcher - trocar o verificador invalida este valor.
 DEFAULT_INFORMATIVE_INLIERS: int = 20
 
 
 # Similaridade propria minima para uma regiao em revisao ser promovida a aceite
 # porque a mesma imagem ja confirmou aquela marca em outra caixa.
 # MEDIDO: regiao errada tem similaridade mediana 0.539 e p90 de 0.755. Em 0.85 a
-# promocao fica bem longe dessa distribuicao — a corroboracao decide entre "e
+# promocao fica bem longe dessa distribuicao - a corroboracao decide entre "e
 # esta marca" e "nao sei", nunca entre "e logo" e "e parede".
 DEFAULT_CORROBORATION_MIN_SIMILARITY: float = 0.85
 
@@ -124,16 +124,16 @@ DEFAULT_CORROBORATION_MIN_SIMILARITY: float = 0.85
 # colapsar duas caixas da mesma marca custa, no pior caso, uma ocorrencia a
 # menos de uma marca que a imagem ja reporta; colapsar duas de marcas diferentes
 # apaga uma marca inteira do relatorio.
-# CASO MEDIDO: o escudo da CBF gerava duas caixas — o escudo inteiro e a parte de
-# cima dele — com contencao 0.76, e as duas passavam pelo limiar de 0.80.
+# CASO MEDIDO: o escudo da CBF gerava duas caixas - o escudo inteiro e a parte de
+# cima dele - com contencao 0.76, e as duas passavam pelo limiar de 0.80.
 DEFAULT_NESTED_SAME_BRAND_CONTAINMENT: float = 0.60
 
 
 # --------------------------------------------------------------------------
-# ESCALA DO SIGLIP2 — os valores acima foram REMEDIDOS na troca de codificador
+# ESCALA DO SIGLIP2 - os valores acima foram REMEDIDOS na troca de codificador
 # --------------------------------------------------------------------------
 # `min_similarity` e `max_similarity` viviam na escala do DINOv2 (0.755 / 0.959)
 # e nao sao portateis. MEDIDO na imagem de referencia, com as 15 marcacoes
 # conferidas a olho: regiao certa tem similaridade 0.922 a 0.994; falso positivo
 # vai ate 0.948. O piso subiu para 0.86 porque abaixo disso, na escala nova, nao
-# ha acerto nenhum — manter 0.755 fazia parede e cadeira entrarem na conta.
+# ha acerto nenhum - manter 0.755 fazia parede e cadeira entrarem na conta.

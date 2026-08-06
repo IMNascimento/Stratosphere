@@ -22,7 +22,7 @@ class Detection:
     Attributes:
         box: Regiao em coordenadas da imagem original.
         confidence: Confianca do detector, entre 0.0 e 1.0. **A escala e do
-            detector, nao universal** — um valor de 0.3 pode ser alto num
+            detector, nao universal** - um valor de 0.3 pode ser alto num
             detector de vocabulario aberto e baixo num detector treinado.
             Comparar com limiar importado de outro modelo produz resultado sem
             sentido.

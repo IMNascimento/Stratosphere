@@ -1,11 +1,11 @@
-"""Codificador com supervisao de texto — descreve a MARCA, nao a superficie.
+"""Codificador com supervisao de texto - descreve a MARCA, nao a superficie.
 
 --------------------------------------------------------------------------
 O PROBLEMA QUE ISTO RESOLVE, E ELE ERA A CAUSA RAIZ
 --------------------------------------------------------------------------
 O DINOv2 e auto-supervisionado: aprende o que faz uma imagem parecer com outra
 sem ninguem dizer o que importa. Para logo, ele decidiu que o que importa e a
-**superficie** — o painel, a iluminacao, a moldura, a textura do tecido.
+**superficie** - o painel, a iluminacao, a moldura, a textura do tecido.
 
 O experimento que revelou isso estava embutido nos proprios dados: varias
 referencias vem da MESMA foto de backdrop, recortadas em marcas diferentes. Da
@@ -29,7 +29,7 @@ pares positivos e 288 negativos:
 dois logos DIFERENTES do mesmo painel pontuavam 0.676, mais alto que duas fotos
 da MESMA marca (0.671). Isso explica de uma vez `amazon x azul` em 0.903,
 `sportv x tvglobo` em 0.883, `itau` lido como `sadia`, os 238 pares confundiveis
-do banco, e o consenso desabando em backdrop — os 25 vizinhos eram outros
+do banco, e o consenso desabando em backdrop - os 25 vizinhos eram outros
 paineis, nao outras aparicoes da marca.
 
 `media` e `global` ficarem ABAIXO de 0.5 e o mesmo fato pelo avesso: usar a
@@ -40,7 +40,7 @@ POR QUE SUPERVISAO DE TEXTO MUDA ISSO
 --------------------------------------------------------------------------
 SigLIP2 foi treinado casando imagem com legenda. Legenda fala de **marca**, nao
 de "retangulo branco com moldura escura". O sinal de treino empurra o vetor para
-o que uma pessoa nomearia na imagem — que e exatamente a pergunta do produto.
+o que uma pessoa nomearia na imagem - que e exatamente a pergunta do produto.
 
 E ha uma consequencia pratica que confirma o mecanismo: apertar o recorte AJUDA
 o DINOv2 (0.515 -> 0.655, tirando painel do quadro) e ATRAPALHA o SigLIP2
@@ -51,7 +51,7 @@ que esta olhando; o DINOv2 precisava que o contexto fosse escondido dele.
 TROCAR ISTO INVALIDA O BANCO E OS LIMIARES
 --------------------------------------------------------------------------
 `signature()` inclui o identificador do modelo, entao um indice construido com o
-DINOv2 e recusado na carga com `IncompatibleEncoderError` — nao degrada em
+DINOv2 e recusado na carga com `IncompatibleEncoderError` - nao degrada em
 silencio. **Reconstrua o banco e recalibre.** A escala muda: onde o DINOv2 dava
 0.671 de mediana entre acertos, o SigLIP2 da 0.868.
 
@@ -78,7 +78,7 @@ class SiglipEncoder(IEncoder):
         """Guarda a configuracao sem carregar pesos.
 
         Args:
-            config: Parametros de codificacao. `aggregation` e ignorada — o
+            config: Parametros de codificacao. `aggregation` e ignorada - o
                 modelo tem uma cabeca de pooling propria, treinada junto com o
                 resto, e substitui-la por media de retalhos desperdicaria
                 justamente a parte que aprendeu a resumir a imagem.
@@ -134,7 +134,7 @@ class SiglipEncoder(IEncoder):
         # NaN aqui e sempre estouro numerico, e quase sempre float16 num modelo
         # grande demais para ele. Sem esta checagem o banco e gravado inteiro de
         # NaN e a falha so aparece muito depois, na primeira busca, como
-        # "similaridade fora de [-1, 1]" — medido: 753 de 753 referencias.
+        # "similaridade fora de [-1, 1]" - medido: 753 de 753 referencias.
         if not np.isfinite(matrix).all():
             raise ValueError(
                 f"{self._config.identifier!r} produziu vetor nao finito em "
@@ -148,7 +148,7 @@ class SiglipEncoder(IEncoder):
 
         Returns:
             Texto no formato `modelo|pooler|lado`. O `pooler` fixo registra que
-            a agregacao nao vem de `EncoderConfig` — quem ler a assinatura de um
+            a agregacao nao vem de `EncoderConfig` - quem ler a assinatura de um
             indice antigo consegue saber com o que ele foi construido.
         """
         return f"{self._config.identifier}|pooler|{self._config.crop_side}"
@@ -188,7 +188,7 @@ class SiglipEncoder(IEncoder):
     def _normalize(matrix: NDArray[np.float32]) -> NDArray[np.float32]:
         """Normaliza cada linha para norma unitaria.
 
-        E o que permite a busca ser um produto interno — ver `IEncoder`.
+        E o que permite a busca ser um produto interno - ver `IEncoder`.
 
         Args:
             matrix: Vetores brutos.

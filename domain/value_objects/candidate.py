@@ -1,6 +1,6 @@
 """Value object de resposta do banco de referencia.
 
-Aqui existe marca. Em `Detection`, nao — e essa assimetria e o coracao da
+Aqui existe marca. Em `Detection`, nao - e essa assimetria e o coracao da
 arquitetura: o detector diz **onde**, o banco diz **qual**.
 
 Typical usage:
@@ -23,7 +23,7 @@ class Candidate:
         brand: Identificador da marca. Nao vazio, minusculo por convencao.
         similarity: Cosseno entre o vetor da regiao e o da referencia.
             Entre -1.0 e 1.0. Valores tipicos de correspondencia real ficam
-            bem acima de 0.5 — o valor absoluto so significa alguma coisa
+            bem acima de 0.5 - o valor absoluto so significa alguma coisa
             comparado a distribuicao do proprio banco.
         reference: Caminho da imagem de referencia que gerou o vetor. Serve
             para auditar por que uma referencia esta puxando falso positivo.

@@ -1,4 +1,4 @@
-"""Contrato do detector agnostico de marca — a camada que responde ONDE.
+"""Contrato do detector agnostico de marca - a camada que responde ONDE.
 
 **A regra que nao pode ser quebrada:** uma implementacao desta porta responde
 apenas *onde ha marca grafica*, nunca *qual marca e*. `Detection` nao tem campo

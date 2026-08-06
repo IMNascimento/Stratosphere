@@ -1,4 +1,4 @@
-"""Detector de vocabulario aberto — encontra ONDE ha marca grafica.
+"""Detector de vocabulario aberto - encontra ONDE ha marca grafica.
 
 Os prompts sao **conceitos** (`logo`, `emblem`, `wordmark`), nunca nomes de
 marca. Nome de marca no prompt reintroduz exatamente o acoplamento que a
@@ -10,11 +10,11 @@ ele deve ser configurado:
 **A escala de confianca e comprimida e nao separa bem.** A distribuicao de
 confianca em regiao com logo e em regiao sem logo se sobrepoe quase inteiramente.
 Consequencia pratica: subir o limiar corta logo real na mesma taxa que corta
-ruido — ele nao e um bom filtro de qualidade, so um controle de volume.
+ruido - ele nao e um bom filtro de qualidade, so um controle de volume.
 
 **Por isso o limiar padrao e baixo.** O detector so precisa acertar *onde*; a
 busca vetorial e a verificacao geometrica filtram *quem*. Limiar alto troca
-recall — irrecuperavel, porque a regiao nunca chega ao codificador — por
+recall - irrecuperavel, porque a regiao nunca chega ao codificador - por
 precisao, que e recuperavel adiante.
 
 Typical usage:
@@ -99,7 +99,7 @@ class Owlv2Detector(IDetector):
         """Reduz a imagem para a resolucao de inferencia.
 
         Reduzir demais faz simbolos pequenos deixarem de existir antes de
-        qualquer modelo opinar — por isso o padrao e alto.
+        qualquer modelo opinar - por isso o padrao e alto.
 
         Args:
             image: Imagem original.
@@ -241,7 +241,7 @@ class Owlv2Detector(IDetector):
         """Remove caixas sobrepostas, **sem olhar o conceito que as gerou**.
 
         A supressao e agnostica de proposito: modelos de vocabulario aberto
-        disparam varios conceitos sobre o mesmo pixel — `logo` e `wordmark` no
+        disparam varios conceitos sobre o mesmo pixel - `logo` e `wordmark` no
         mesmo simbolo, por exemplo. Suprimir por conceito deixaria as duas
         caixas passarem, e a mesma regiao seria codificada e cobrada duas vezes.
 

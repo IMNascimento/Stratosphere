@@ -2,16 +2,16 @@
 
 **Por que nao um banco vetorial.** Dezenas de marcas com algumas dezenas de
 referencias cada dao milhares de vetores. Uma consulta e uma multiplicacao de
-matriz `(1, D) x (D, N)` — milissegundos. Banco vetorial passa a valer a partir
+matriz `(1, D) x (D, N)` - milissegundos. Banco vetorial passa a valer a partir
 de centenas de milhares de vetores; antes disso ele acrescenta um servico para
 operar, um processo para subir e um estado a mais para dessincronizar. O `json`
-de metadados, em compensacao, e auditavel com um editor de texto — o que importa
+de metadados, em compensacao, e auditavel com um editor de texto - o que importa
 muito quando a pergunta e "por que esta referencia esta puxando falso positivo?".
 
 **A trava que evita uma semana perdida.** O manifesto guarda a assinatura do
 codificador que produziu os vetores. Um banco construido com um codificador e
 consultado com outro devolve similaridades plausiveis e completamente sem
-significado — os dois espacos vetoriais nao tem relacao nenhuma. Aqui isso vira
+significado - os dois espacos vetoriais nao tem relacao nenhuma. Aqui isso vira
 excecao em vez de virar relatorio errado.
 
 Os nomes dos arquivos e as chaves do json seguem em portugues de proposito: eles
@@ -212,7 +212,7 @@ class NpzDatabaseWriter:
     """Escreve um banco em disco.
 
     Separado de `NpzReferenceDatabase` de proposito. O banco tem a invariante de
-    nao estar vazio — faz sentido para quem consulta e nao faz nenhum para quem
+    nao estar vazio - faz sentido para quem consulta e nao faz nenhum para quem
     grava. Juntar os dois obrigaria a construir um banco falso so para poder
     escrever o verdadeiro, na primeira execucao de uma instalacao limpa.
     """

@@ -27,7 +27,7 @@ stratosphere = "entrypoints.cli.main:main"
 # procurado aqui por acaso: so os pacotes que apontarem para esta fonte por nome.
 # O resto continua vindo do PyPI.
 #
-# O canal e o cu130 porque e o unico com torch 2.13.0 para cp311/win_amd64 —
+# O canal e o cu130 porque e o unico com torch 2.13.0 para cp311/win_amd64 -
 # cu126 e cu128 param no 2.9. Sem esta fonte, o PyPI entrega a build `+cpu` e
 # `.to("cuda:0")` levanta "Torch not compiled with CUDA enabled", que nao e um
 # problema de driver nem de configuracao: e o pacote errado.
@@ -64,7 +64,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "ANN"]
-# E501: linha longa — o ruff format ja cuida do limite.
+# E501: linha longa - o ruff format ja cuida do limite.
 # ANN101/ANN102: exigem anotar `self` e `cls`. Contradizem diretamente
 #   .claude/standards/languages/PYTHON.md ("self e cls nunca sao anotados"),
 #   e foram descontinuadas no proprio ruff. O padrao do projeto prevalece.
@@ -72,7 +72,7 @@ ignore = ["E501", "ANN101", "ANN102"]
 
 [tool.ruff.lint.per-file-ignores]
 # ANN401 proibe `Any` em assinatura. Os adaptadores de infrastructure envolvem
-# SDKs sem tipagem (tensores, keypoints, handles de modelo) — tipar esses
+# SDKs sem tipagem (tensores, keypoints, handles de modelo) - tipar esses
 # objetos exigiria inventar stubs que nao correspondem a realidade da
 # biblioteca. `Any` fica confinado a esta camada de proposito: domain e
 # application seguem proibindo.

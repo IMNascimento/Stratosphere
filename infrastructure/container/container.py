@@ -1,7 +1,7 @@
 """Montagem do grafo de dependencias.
 
 **Este e o unico arquivo que instancia infraestrutura concreta.** Nenhuma outra
-camada sabe que existe OWLv2, DINOv2 ou SIFT — todas falam com as portas. Trocar
+camada sabe que existe OWLv2, DINOv2 ou SIFT - todas falam com as portas. Trocar
 qualquer adaptador e uma mudanca aqui e em mais lugar nenhum.
 
 Tambem e o unico lugar que le variavel de ambiente, quando houver.
@@ -46,7 +46,7 @@ class Container:
 
     Attributes:
         analyze_image: Pipeline completa para uma imagem. None quando o banco
-            ainda nao existe — construir o banco nao exige banco.
+            ainda nao existe - construir o banco nao exige banco.
         build_database: Pasta de referencias para indice vetorial.
         audit_database: Pares de marcas confundiveis. None sem banco.
         image_source: Exposto porque o entrypoint precisa listar pastas.
@@ -65,7 +65,7 @@ def build_container(config: AppConfig, database_path: Path) -> Container:
     """Monta o grafo completo de dependencias.
 
     O banco de referencia e carregado quando existe. Quando nao existe, os casos
-    de uso que dependem dele ficam em None em vez de a montagem falhar — isso
+    de uso que dependem dele ficam em None em vez de a montagem falhar - isso
     permite que `build_database` rode numa instalacao limpa, que e exatamente o
     primeiro comando que alguem executa.
 

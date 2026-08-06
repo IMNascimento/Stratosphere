@@ -52,5 +52,5 @@ class Decision:
             raise DomainError(f"pontuacao fora de [0, 1]: {self.score}")
         if self.queue is Queue.AUTO_REJECT and self.brand is not None:
             raise DomainError(
-                "regiao em AUTO_REJECT nao pode afirmar marca — " f"recebido: {self.brand!r}"
+                "regiao em AUTO_REJECT nao pode afirmar marca - " f"recebido: {self.brand!r}"
             )
