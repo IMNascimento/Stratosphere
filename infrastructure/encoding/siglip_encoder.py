@@ -131,6 +131,15 @@ class SiglipEncoder(IEncoder):
             blocks.append(self._encode_batch(items[start : start + size]))
 
         matrix = np.vstack(blocks)
+        # NaN aqui e sempre estouro numerico, e quase sempre float16 num modelo
+        # grande demais para ele. Sem esta checagem o banco e gravado inteiro de
+        # NaN e a falha so aparece muito depois, na primeira busca, como
+        # "similaridade fora de [-1, 1]" — medido: 753 de 753 referencias.
+        if not np.isfinite(matrix).all():
+            raise ValueError(
+                f"{self._config.identifier!r} produziu vetor nao finito em "
+                f"{self._precision}. Rode com STRATOSPHERE_PRECISION=float32."
+            )
         self._dimension = int(matrix.shape[1])
         return self._normalize(matrix)
 
