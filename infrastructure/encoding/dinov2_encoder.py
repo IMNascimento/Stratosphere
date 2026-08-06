@@ -114,6 +114,15 @@ class Dinov2Encoder(IEncoder):
             blocks.append(self._encode_batch(items[start : start + size]))
 
         matrix = np.vstack(blocks)
+        # NaN aqui e sempre estouro numerico, e quase sempre float16 num modelo
+        # grande demais para ele. Sem esta checagem o banco e gravado inteiro de
+        # NaN e a falha so aparece muito depois, na primeira busca, como
+        # "similaridade fora de [-1, 1]" — medido: 753 de 753 referencias.
+        if not np.isfinite(matrix).all():
+            raise ValueError(
+                f"{self._config.identifier!r} produziu vetor nao finito em "
+                f"{self._precision}. Rode com STRATOSPHERE_PRECISION=float32."
+            )
         self._dimension = int(matrix.shape[1])
         return self._normalize(matrix)
 
@@ -165,13 +174,21 @@ class Dinov2Encoder(IEncoder):
         """Reduz os tokens do modelo a um vetor por imagem.
 
         Args:
-            states: Tensor `(lote, 1 + retalhos, dimensao)`.
+            states: Tensor `(lote, prefixo + retalhos, dimensao)`, onde o
+                prefixo e o CLS mais os tokens de registro do modelo.
 
         Returns:
             Tensor `(lote, dimensao)` conforme a agregacao configurada.
         """
+        # Alem do CLS, alguns modelos da familia trazem tokens de REGISTRO —
+        # a DINOv3 tem quatro. Fatiar assumindo so o CLS deixa esses quatro
+        # misturados aos retalhos, a contagem para de formar grade quadrada e o
+        # `centro` cai silenciosamente para a media completa. Medido, a diferenca
+        # entre fatiar certo e errado na DINOv3-vitl16 e 0.769 contra 0.528 de
+        # AUC — a agregacao errada e pior que moeda.
+        prefix = 1 + int(getattr(self._model.config, "num_register_tokens", 0) or 0)
         global_ = states[:, 0]
-        patches = states[:, 1:]
+        patches = states[:, prefix:]
 
         if self._config.aggregation == "global":
             return global_
