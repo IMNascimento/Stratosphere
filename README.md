@@ -16,9 +16,11 @@ A ideia central cabe numa frase:
 Analogia: detector de rosto - que acha qualquer rosto, inclusive de quem nunca
 viu - somado a reconhecimento facial, que compara com um banco cadastrado.
 
-**[Ver o fluxo da pipeline como pagina navegavel](https://claude.ai/code/artifact/8fa038b9-1096-4c94-9253-4c67b915ad06)** -
-mesmo conteudo das secoes abaixo, com o diagrama, os limiares em uso e as regras
-do roteador lado a lado.
+**[Ver o fluxo como pagina](docs/index.html)** - mesmo conteudo das secoes
+abaixo, com o diagrama, os limiares e as regras do roteador lado a lado. E um
+arquivo unico e autocontido: sem script, sem CDN, com o diagrama embutido como
+SVG. Abra direto no navegador, ou publique em Settings > Pages apontando para a
+pasta `docs/`.
 
 ### Indice
 
@@ -149,6 +151,22 @@ A pontuacao e soma ponderada de cinco sinais - similaridade `0.30`, geometria
 `0.32`, consenso `0.20`, margem `0.12`, deteccao `0.06` - e o peso da geometria e
 **redistribuido** quando ela nao opina. Sem isso, logo chapado seria punido por
 uma evidencia que nunca teve chance de existir.
+
+<details>
+<summary>Regenerar o SVG de <code>docs/index.html</code> depois de mudar o diagrama</summary>
+
+O bloco mermaid acima e a fonte unica. A pagina embute a versao ja renderizada
+para nao depender de CDN nem de JavaScript:
+
+```bash
+sed -n '/```mermaid/,/```/p' README.md | sed '1d;$d' > /tmp/fluxo.mmd
+npx @mermaid-js/mermaid-cli -i /tmp/fluxo.mmd -o /tmp/fluxo.svg -b transparent
+```
+
+Depois substitua o `<svg id="fluxo-pipeline">` de `docs/index.html` pelo novo,
+trocando `my-svg` por `fluxo-pipeline` nos identificadores.
+
+</details>
 
 ### As filas de saida
 
