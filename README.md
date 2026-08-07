@@ -16,6 +16,22 @@ A ideia central cabe numa frase:
 Analogia: detector de rosto - que acha qualquer rosto, inclusive de quem nunca
 viu - somado a reconhecimento facial, que compara com um banco cadastrado.
 
+**[Ver o fluxo da pipeline como pagina navegavel](https://claude.ai/code/artifact/8fa038b9-1096-4c94-9253-4c67b915ad06)** -
+mesmo conteudo das secoes abaixo, com o diagrama, os limiares em uso e as regras
+do roteador lado a lado.
+
+### Indice
+
+| | |
+|---|---|
+| [A pipeline](#a-pipeline) | o fluxo, as camadas e as regras do roteador |
+| [As filas de saida](#as-filas-de-saida) | para onde cada regiao vai, e quem precisa olhar |
+| [Onde isso chega](#onde-isso-chega) | precisao, recall e custo medidos |
+| [Modelos: o que foi medido](#modelos-o-que-foi-medido) | os 9 codificadores, 4 verificadores e 2 juizes testados |
+| [Como fazer um bom banco](#como-fazer-um-bom-banco-de-referencia) | oito recomendacoes, cada uma com o caso que a produziu |
+| [Uso](#uso) | construir o banco, auditar, analisar uma pasta |
+| [Todos os comandos](#todos-os-comandos) | a CLI inteira e as ferramentas de medicao |
+
 ---
 
 ## Por que nao um classificador por marca
@@ -37,33 +53,102 @@ acoplamento de voltar por descuido.
 
 ## A pipeline
 
-```
-imagem
-  │
-  ├─ 1  PRE-FILTRO ............ descarta imagem sem estrutura
-  │       Permissivo de proposito. O que se descarta aqui nunca mais volta.
-  │
-  ├─ 2  DETECTOR AGNOSTICO .... ONDE ha marca grafica
-  │       Prompts de CONCEITO ("logo", "emblem"), nunca nomes de marca.
-  │
-  ├─ 3a CODIFICADOR ........... regiao -> vetor
-  │       Modelo com supervisao de TEXTO. Ver "Por que nao um encoder
-  │       auto-supervisionado" abaixo - a escolha errada aqui custou
-  │       27 pontos de recall.
-  ├─ 3b BUSCA VETORIAL ........ vetor -> marcas candidatas
-  │       E aqui que a marca aparece pela primeira vez.
-  │
-  ├─ 4  VERIFICACAO GEOMETRICA  "e o mesmo desenho?"
-  │       Falha de forma diferente da camada 3 - por isso as duas convivem.
-  │       So roda no que a camada 3 NAO resolveu: 0.7s por imagem
-  │       contra 3.0s verificando tudo.
-  │
-  └─ 5  ROTEADOR .............. funde os sinais -> fila de destino
+**Cada camada e mais cara que a anterior e so ve o que a anterior deixou passar.**
+E a unica razao de a pipeline caber em 0,7 s por imagem com um detector que
+devolve ~55 regioes candidatas.
+
+O fluxo **volta ao roteador**: ele decide uma vez sem geometria, e so o que fica
+em duvida paga a verificacao geometrica e e redecidido.
+
+```mermaid
+flowchart TD
+  IMG([imagem]) --> PRE{"pre-filtro<br/>tem estrutura?"}
+  PRE -->|nao| DESC[/descartada/]
+  PRE -->|sim| DET["detector agnostico<br/>OWLv2 - prompts de conceito"]
+  DET --> CROP["recorte + codificacao<br/>SigLIP2 - vetor por regiao"]
+  CROP --> BUSCA["busca vetorial<br/>top-25 por cosseno"]
+  BUSCA --> ROT{{"roteador<br/>sem geometria"}}
+
+  ROT -->|decidido| POS
+  ROT -->|em duvida| GEO["verificacao geometrica<br/>DISK + LightGlue"]
+  GEO --> ROT2{{"roteador<br/>com geometria"}}
+  ROT2 --> POS
+
+  POS["colapsa caixas aninhadas"] --> CORR["corroboracao na imagem"]
+  CORR --> JUIZ{"ainda em revisao?"}
+  JUIZ -->|"sim, e --vlm ligado"| VLM["juiz visual<br/>Qwen3.5-4B"]
+  JUIZ -->|nao| FILAS
+  VLM --> FILAS
+
+  FILAS(( )) --> A[auto_aceite]
+  FILAS --> R[revisao]
+  FILAS --> C[confusao]
+  FILAS --> O[orfao]
+  FILAS --> N[negativa]
+  FILAS --> X[auto_rejeicao]
+
+  classDef aceite fill:#2ea043,stroke:#2ea043,color:#fff
+  classDef revisao fill:#db9a04,stroke:#db9a04,color:#fff
+  classDef confusao fill:#2f81f7,stroke:#2f81f7,color:#fff
+  classDef orfao fill:#a371f7,stroke:#a371f7,color:#fff
+  classDef negativa fill:#8b949e,stroke:#8b949e,color:#fff
+  classDef rejeicao fill:#f85149,stroke:#f85149,color:#fff
+  class A aceite
+  class R revisao
+  class C confusao
+  class O orfao
+  class N negativa
+  class X,DESC rejeicao
 ```
 
-Cada camada e mais cara que a anterior e so ve o que a anterior deixou passar. A
-verificacao geometrica, em especial, roda apenas nos melhores candidatos de cada
-regiao - se rodasse em tudo, seria a camada dominante do custo.
+> As cores das filas acima sao **as mesmas** que o `--anotar` desenha nas imagens
+> de saida. Quem abre `runs/anotadas/` reconhece verde como aceite e ambar como
+> revisao.
+
+### As camadas, com os limiares em uso
+
+| # | camada | pergunta | parametros |
+|---|---|---|---|
+| 1 | pre-filtro | a imagem tem estrutura? | densidade de borda >= `0.004` |
+| 2 | detector agnostico | **ONDE** ha marca grafica? | OWLv2 base, confianca >= `0.05`, ate `300` regioes, `1024` px |
+| 3a | codificador | com o que a regiao se parece? | SigLIP2 base, `pooler`, recorte `224` px, margem `12%` |
+| 3b | busca vetorial | quais marcas sao candidatas? | top-`25` por cosseno |
+| 4 | roteador | da para decidir so com o banco? | aceita >= `0.80`, rejeita < `0.60` |
+| 5 | verificacao geometrica | e **literalmente** o mesmo desenho? | DISK+LightGlue, `448` px, so onde muda o destino |
+| 6 | colapso de aninhadas | estas duas caixas sao o mesmo logo? | contencao `0.60` mesma marca, `0.80` marcas diferentes |
+| 7 | corroboracao | esta foto ja confirmou esta marca? | similaridade propria >= `0.85` |
+| 8 | juiz visual (`--vlm`) | olhando as duas imagens: e a mesma marca? | Qwen3.5-4B, nega <= `0.04`, confirma >= `0.75` |
+
+Duas decisoes de projeto que a tabela nao mostra e que sustentam o resto:
+
+- **O detector nunca e informado de nome de marca.** Os prompts sao de conceito, e
+  a entidade `Detection` nem tem campo de marca. E essa ausencia que faz marca
+  nova ser uma pasta de imagens, e nao um ciclo de retreino.
+- **A geometria so SOMA.** "Nao confirmei" significa "nao sei", nunca "nao e".
+  Contagem baixa nao e prova contra - quem carrega prova contra sao a
+  similaridade, o consenso e a margem.
+
+### As regras do roteador, na ordem em que decidem
+
+A ordem **e** a politica: a primeira regra que casa decide, e as regras de
+negocio vem antes das de evidencia. Reordenar muda o comportamento do produto,
+nao so do codigo.
+
+| # | regra | condicao | destino |
+|---|---|---|---|
+| 1 | sem candidatos | o banco nao respondeu nada | `auto_rejeicao` |
+| 2 | marca negativa | marca declarada fora do portfolio | `negativa` |
+| 3 | grupo de confusao | empate no mesmo grupo **e** ha evidencia | `confusao` |
+| 4 | parecer do juiz | p >= `0.75` confirma, p <= `0.04` nega | `auto_aceite` / `auto_rejeicao` |
+| 5 | orfao geometrico | inliers >= `20` **e** similaridade <= `0.90` | `orfao` |
+| 6 | consenso do top-25 | >= `0.80`, `8`+ concordantes, sim >= `0.86`, acima do piso | `auto_aceite` |
+| 7 | aceite por geometria | >= `90` inliers confirmando a marca do topo | `auto_aceite` |
+| 8 | limiares | pontuacao >= `0.80` / < `0.60` / entre os dois | `auto_aceite` / `auto_rejeicao` / `revisao` |
+
+A pontuacao e soma ponderada de cinco sinais - similaridade `0.30`, geometria
+`0.32`, consenso `0.20`, margem `0.12`, deteccao `0.06` - e o peso da geometria e
+**redistribuido** quando ela nao opina. Sem isso, logo chapado seria punido por
+uma evidencia que nunca teve chance de existir.
 
 ### As filas de saida
 
@@ -79,6 +164,24 @@ regiao - se rodasse em tudo, seria a camada dominante do custo.
 **`orfao` e o mais valioso.** Ele nao e um erro: e o sistema dizendo *"o banco
 tem esta marca e nao tem esta variacao dela"*. Promover essas regioes de volta
 para o banco e o que faz o sistema melhorar sozinho com o uso.
+
+### Onde isso chega
+
+Numa foto de coletiva com **9 marcas e 15 marcacoes** conferidas a olho:
+
+| | com `--vlm` |
+|---|---|
+| aceites | 14 |
+| **precisao** | **100%** - 14 de 14 certos |
+| **recall** | **93%** - 14 de 15 marcacoes |
+| fila humana | **0** |
+| custo | **0,7 s** por imagem numa RTX 3060 |
+
+Oito das nove marcas encontradas. Falta so a que esta encoberta pela cabeca do
+entrevistado - limite do detector, nao do reconhecimento.
+
+> Precisao e recall vem de **uma** imagem. Serve para detectar regressao
+> grosseira, nao para prometer desempenho em producao.
 
 ---
 
