@@ -142,7 +142,7 @@ def main(arguments: list[str] | None = None) -> int:
                 config = replace(base, routing=routing)
                 label = (
                     f"inl={routing.confident_inliers:.0f} "
-                    f"aceite={routing.accept:.2f} "
+                    f"rej={routing.reject:.2f} ace={routing.accept:.2f} "
                     f"cons={routing.consensus_accept:.2f}"
                 )
                 _report(label, _evaluate(records, config))
@@ -254,13 +254,27 @@ def _variants(routing: RoutingConfig) -> list[RoutingConfig]:
     Returns:
         As variantes, sem repetir a base.
     """
-    inliers = (10.0, 20.0, 40.0, 60.0, 90.0)
-    accepts = (0.55, 0.60, 0.65, 0.70)
-    consensus = (0.70, 0.80, 0.90)
-    return [
-        replace(routing, confident_inliers=i, accept=a, consensus_accept=c)
-        for i, a, c in product(inliers, accepts, consensus)
-    ]
+    inliers = (40.0, 60.0, 90.0, 120.0)
+    rejeitas = (0.50, 0.60, 0.70)
+    aceites = (0.75, 0.80, 0.85, 0.90)
+    consensos = (0.70, 0.80, 0.90)
+    variantes = []
+    for i, rej, ace, con in product(inliers, rejeitas, aceites, consensos):
+        # O dominio recusa aceite abaixo ou igual ao piso de rejeicao, e com
+        # razao: seria uma faixa de revisao negativa. Pular aqui evita que a
+        # varredura morra no meio por combinacao incoerente.
+        if ace <= rej:
+            continue
+        variantes.append(
+            replace(
+                routing,
+                confident_inliers=i,
+                reject=rej,
+                accept=ace,
+                consensus_accept=con,
+            )
+        )
+    return variantes
 
 
 def _report_header() -> None:
