@@ -28,10 +28,10 @@ from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 
+from application.ports.i_encoder import IEncoder
 from config.settings import AppConfig
-from infrastructure.container.container import _build_verifier
+from infrastructure.container.container import _build_encoder, _build_verifier
 from infrastructure.detection.owlv2_detector import Owlv2Detector
-from infrastructure.encoding.dinov2_encoder import Dinov2Encoder
 from infrastructure.environment.env_settings import apply_env_overrides, load_env_file
 from infrastructure.image.pillow_image_source import PillowImageSource
 from infrastructure.index.npz_reference_database import NpzReferenceDatabase
@@ -68,7 +68,7 @@ def main(arguments: list[str] | None = None) -> int:
         config = replace(config, geometry=replace(config.geometry, match_side=options.lado))
 
     source = PillowImageSource(min_side_to_upscale=config.encoder.min_side_to_upscale)
-    encoder = Dinov2Encoder(config.encoder, config.device, config.precision)
+    encoder = _build_encoder(config)
     detector = Owlv2Detector(config.detector, config.device, config.precision)
     verifier = _build_verifier(config)
     database = NpzReferenceDatabase.load(Path(options.banco), encoder.signature())
@@ -112,7 +112,7 @@ def _measure(  # noqa: PLR0913 - e um script de medicao, os componentes vem todo
     brand: str,
     config: AppConfig,
     source: PillowImageSource,
-    encoder: Dinov2Encoder,
+    encoder: IEncoder,
     detector: Owlv2Detector,
     verifier: object,
     database: NpzReferenceDatabase,

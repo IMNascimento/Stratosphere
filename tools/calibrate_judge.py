@@ -28,13 +28,14 @@ Typical usage:
 import argparse
 import sys
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from application.ports.i_encoder import IEncoder
 from config.settings import AppConfig
 from domain.entities.analyzed_region import AnalyzedRegion
+from infrastructure.container.container import _build_encoder
 from infrastructure.detection.owlv2_detector import Owlv2Detector
-from infrastructure.encoding.dinov2_encoder import Dinov2Encoder
 from infrastructure.environment.env_settings import apply_env_overrides, load_env_file
 from infrastructure.image.pillow_image_source import PillowImageSource
 from infrastructure.index.npz_reference_database import NpzReferenceDatabase
@@ -81,7 +82,7 @@ def main(arguments: list[str] | None = None) -> int:
     load_env_file()
     config = apply_env_overrides(AppConfig())
     source = PillowImageSource(min_side_to_upscale=config.encoder.min_side_to_upscale)
-    encoder = Dinov2Encoder(config.encoder, options.dispositivo, options.precisao)
+    encoder = _build_encoder(replace(config, device=options.dispositivo))
     detector = Owlv2Detector(config.detector, options.dispositivo, options.precisao)
     database = NpzReferenceDatabase.load(Path(options.banco), encoder.signature())
     judge = QwenJudge(config.judge, options.dispositivo, options.precisao)
@@ -110,7 +111,7 @@ def _measure(  # noqa: PLR0913 - e um script de medicao, os componentes vem todo
     brand: str,
     config: AppConfig,
     source: PillowImageSource,
-    encoder: Dinov2Encoder,
+    encoder: IEncoder,
     detector: Owlv2Detector,
     database: NpzReferenceDatabase,
     judge: QwenJudge,

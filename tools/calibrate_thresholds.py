@@ -43,12 +43,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np  # noqa: E402
 
+from application.ports.i_encoder import IEncoder
 from application.ports.i_geometric_verifier import IGeometricVerifier  # noqa: E402
 from config.settings import AppConfig  # noqa: E402
 from domain.entities.analyzed_region import AnalyzedRegion  # noqa: E402
-from infrastructure.container.container import _build_verifier  # noqa: E402
+from infrastructure.container.container import _build_encoder, _build_verifier  # noqa: E402
 from infrastructure.detection.owlv2_detector import Owlv2Detector  # noqa: E402
-from infrastructure.encoding.dinov2_encoder import Dinov2Encoder  # noqa: E402
 from infrastructure.image.pillow_image_source import (  # noqa: E402
     ACCEPTED_EXTENSIONS,
     PillowImageSource,
@@ -124,7 +124,7 @@ def main(arguments: list[str] | None = None) -> int:
 
     config = AppConfig()
     source = PillowImageSource(min_side_to_upscale=config.encoder.min_side_to_upscale)
-    encoder = Dinov2Encoder(config.encoder, options.dispositivo, options.precisao)
+    encoder = _build_encoder(replace(config, device=options.dispositivo))
     detector = Owlv2Detector(config.detector, options.dispositivo, options.precisao)
     # Mede o verificador que a pipeline realmente usa: a escala de inliers
     # muda com o matcher, e calibrar contra outro produziria limiar errado.
@@ -161,7 +161,7 @@ def _measure(  # noqa: PLR0913 - e um script de medicao, os componentes vem todo
     brand: str,
     config: AppConfig,
     source: PillowImageSource,
-    encoder: Dinov2Encoder,
+    encoder: IEncoder,
     detector: Owlv2Detector,
     verifier: IGeometricVerifier,
     database: NpzReferenceDatabase,
